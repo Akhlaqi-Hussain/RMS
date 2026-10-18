@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getUserFromToken } from "./lib/auth";
+import { getActiveUser } from "./lib/session";
 
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
@@ -11,7 +11,7 @@ export async function middleware(req) {
 
   // Public route: login
   if (pathname === "/login") {
-    const user = await getUserFromToken(req);
+    const user = await getActiveUser(req);
     if (user) {
       return NextResponse.redirect(new URL("/main", req.url));
     }
@@ -27,7 +27,7 @@ export async function middleware(req) {
       return NextResponse.next();
     }
 
-    const user = await getUserFromToken(req);
+    const user = await getActiveUser(req);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -54,7 +54,7 @@ export async function middleware(req) {
 
   // Protected routes: /main
   if (pathname.startsWith("/main")) {
-    const user = await getUserFromToken(req);
+    const user = await getActiveUser(req);
     if (!user) {
       // Invalid or missing token → redirect to login and clear cookie
       const res = NextResponse.redirect(new URL("/login", req.url));
@@ -82,5 +82,13 @@ export async function middleware(req) {
 }
 
 export const config = {
-  matcher: ["/login", "/main/:path*", "/api/:path*"],
+  // SEC-6: Node.js runtime so the middleware can check the account in the
+  // database (getActiveUser in lib/session.js; stable since Next.js 15.5).
+  runtime: "nodejs",
+  // The menu routes (/api/menu, /api/menu/<id>) are NOT run through this
+  // middleware: in production, Next.js 15.5 breaks request bodies larger than
+  // about 1 MB that pass through Node.js middleware, which would break picture
+  // uploads. Those two routes apply exactly the same checks themselves via
+  // requireActiveUser() from lib/session.js.
+  matcher: ["/login", "/main/:path*", "/api/((?!menu(?:/|$)).*)"],
 };

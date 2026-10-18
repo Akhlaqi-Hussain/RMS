@@ -3,9 +3,16 @@ import pool from "@/lib/db";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { validateMenuImage } from "@/lib/upload";
+import { publicErrorMessage, errorStatus } from "@/lib/errors";
+import { requireActiveUser } from "@/lib/session";
 
 // POST -> Add menu item with image
 export async function POST(req) {
+  // SEC-1/SEC-6: this route is skipped by middleware.js (large uploads), so it checks itself
+  const auth = await requireActiveUser(req, { managerOnly: true });
+  if (auth.response) return auth.response;
+
+
   try {
     const formData = await req.formData();
     const name = formData.get("name");
@@ -57,12 +64,20 @@ export async function POST(req) {
     return NextResponse.json(result);
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: publicErrorMessage(error) },
+      { status: errorStatus(error) }
+    );
   }
 }
 
 // GET -> Fetch items (all or by category)
 export async function GET(req) {
+  // SEC-1/SEC-6: this route is skipped by middleware.js (large uploads), so it checks itself
+  const auth = await requireActiveUser(req);
+  if (auth.response) return auth.response;
+
+
   try {
     const { searchParams } = new URL(req.url);
     const catId = searchParams.get("categoryId");
@@ -76,6 +91,9 @@ export async function GET(req) {
     return NextResponse.json(items);
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: publicErrorMessage(error) },
+      { status: errorStatus(error) }
+    );
   }
 }
