@@ -1,5 +1,6 @@
 import pool from "@/lib/db";
 import bcrypt from "bcrypt";
+import { publicErrorMessage, errorStatus } from "@/lib/errors";
 
 export async function POST(req) {
   try {
@@ -25,7 +26,10 @@ export async function POST(req) {
     return Response.json(result);
   } catch (error) {
     console.error(error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json(
+      { error: publicErrorMessage(error) },
+      { status: errorStatus(error) }
+    );
   }
 }
 

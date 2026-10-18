@@ -103,10 +103,8 @@ export async function PUT(request, { params }) {
 
     // Hash password if provided
     if (updateData.password && updateData.password.trim() !== "") {
-      console.log("Updating password for staff:", id);
       const saltRounds = 10;
       const hashedPassword = await bcrypt.hash(updateData.password, saltRounds);
-      console.log("Hashed password:", hashedPassword);
 
       updateQuery = "CALL updateStaffWithPassword(?, ?, ?, ?, ?, ?, ?)";
       queryParams = [
@@ -119,8 +117,6 @@ export async function PUT(request, { params }) {
         hashedPassword,
       ];
     }
-
-    console.log(updateQuery, queryParams);
 
     // Update staff in database
     await pool.query(updateQuery, queryParams);
