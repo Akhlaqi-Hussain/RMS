@@ -18,6 +18,40 @@ export async function middleware(req) {
     return NextResponse.next();
   }
 
+  // Protected API routes (SEC-1): every /api route needs a valid login,
+  // except the ones listed as public. Management APIs need the manager role,
+  // matching the existing page rules for /main/manage, /main/reports, /main/dashboard.
+  if (pathname.startsWith("/api/")) {
+    const publicApi = ["/api/login", "/api/logout", "/api/auth"];
+    if (publicApi.includes(pathname)) {
+      return NextResponse.next();
+    }
+
+    const user = await getUserFromToken(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const isRead = req.method === "GET";
+    const managerOnly =
+      pathname === "/api/staff" ||
+      pathname.startsWith("/api/staff/") ||
+      pathname === "/api/dashboard" ||
+      pathname === "/api/reports" ||
+      (!isRead &&
+        (pathname === "/api/tables" ||
+          pathname.startsWith("/api/tables/") ||
+          pathname === "/api/menu" ||
+          pathname.startsWith("/api/menu/") ||
+          pathname === "/api/categories"));
+
+    if (managerOnly && user.role !== "manager") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    return NextResponse.next();
+  }
+
   // Protected routes: /main
   if (pathname.startsWith("/main")) {
     const user = await getUserFromToken(req);
@@ -48,5 +82,5 @@ export async function middleware(req) {
 }
 
 export const config = {
-  matcher: ["/login", "/main/:path*"],
+  matcher: ["/login", "/main/:path*", "/api/:path*"],
 };
