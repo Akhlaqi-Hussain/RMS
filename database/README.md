@@ -28,16 +28,25 @@ The app connects as the limited user `rms_app`, which can read and write data bu
 | Stop it (data is kept) | `docker compose --env-file .env.local stop` |
 | See the first-start log | `docker compose --env-file .env.local logs db` |
 
-## Backup
+## Backup (Windows Command Prompt, from the project folder)
+Keep backups OUTSIDE the project folder — they contain data and must never be committed.
 ```
-docker compose --env-file .env.local exec db sh -c "mysqldump -uroot -p$MYSQL_ROOT_PASSWORD --routines --single-transaction rms_dev" > backup_rms_dev.sql
+mkdir G:\Projects\rms-backups
+docker compose --env-file .env.local exec -T db sh -c "mysqldump -uroot -p$MYSQL_ROOT_PASSWORD --routines --single-transaction rms_dev" > G:\Projects\rms-backups\backup_rms_dev.sql
 ```
-(`$MYSQL_ROOT_PASSWORD` is read inside the container, so the password never appears on screen.
-This assumes the root password has no spaces.) Keep backup files outside Git — they may contain data.
-This command will be verified on Windows during Gate 5.
+- `-T` is required: without it the output file can be corrupted.
+- `$MYSQL_ROOT_PASSWORD` is read *inside* the container, so the password never appears on screen.
+- `--routines` includes the 25 stored procedures.
 
-## Restore (into an empty database only)
-Restore is tested and documented step by step during Gate 5.
+## Restore check (into a separate scratch database — the original is not touched)
+```
+docker compose --env-file .env.local exec -T db sh -c "mysql -uroot -p$MYSQL_ROOT_PASSWORD -e 'CREATE DATABASE rms_restore_check CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'"
+docker compose --env-file .env.local exec -T db sh -c "mysql -uroot -p$MYSQL_ROOT_PASSWORD rms_restore_check" < G:\Projects\rms-backups\backup_rms_dev.sql
+docker compose --env-file .env.local exec -T db sh -c "mysql -uroot -p$MYSQL_ROOT_PASSWORD -e 'SELECT COUNT(*) FROM rms_dev.orders; SELECT COUNT(*) FROM rms_restore_check.orders'"
+docker compose --env-file .env.local exec -T db sh -c "mysql -uroot -p$MYSQL_ROOT_PASSWORD -e 'DROP DATABASE rms_restore_check'"
+```
+The two counts must be equal. The last line removes only the scratch copy.
+To restore *for real* (replacing rms_dev), ask first — that is a destructive action.
 
 ## Changing the schema later
 Never edit a migration that has already been applied. Add a new numbered file

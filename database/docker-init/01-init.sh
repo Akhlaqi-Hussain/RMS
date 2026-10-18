@@ -7,7 +7,12 @@
 #   - applies all migrations to both
 #   - loads synthetic seed data into BOTH (tests start from known data)
 #   - creates the limited app user `rms_app` (no right to create/drop tables)
+#
+# The whole body runs in a subshell "( ... )": the official MySQL image may
+# *source* this file into its own startup script, and strict-mode settings
+# (set -u) must not leak into that script.
 # =====================================================================
+(
 set -euo pipefail
 
 RMS_DIR="${RMS_DIR:-/rms}"
@@ -34,3 +39,4 @@ $MYSQL_CMD -e "
   FLUSH PRIVILEGES;"
 
 echo "[rms-init] done"
+)
