@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { getUserFromToken } from "@/lib/auth";
+import { publicErrorMessage, errorStatus } from "@/lib/errors";
 
 // Create new order
 export async function POST(req) {
   try {
     const user = await getUserFromToken(req);
-    if (!user.id) {
+    if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -41,8 +42,8 @@ export async function POST(req) {
   } catch (err) {
     console.error("Create order error:", err);
     return NextResponse.json(
-      { error: "Failed to create order" },
-      { status: 500 }
+      { error: publicErrorMessage(err, "Failed to create order") },
+      { status: errorStatus(err) }
     );
   }
 }
