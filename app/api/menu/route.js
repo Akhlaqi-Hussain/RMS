@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { validateMenuImage } from "@/lib/upload";
 
 // POST -> Add menu item with image
 export async function POST(req) {
@@ -31,7 +32,11 @@ export async function POST(req) {
     if (imageFile && imageFile.name) {
       const bytes = await imageFile.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      filename = `${Date.now()}-${imageFile.name}`;
+      const check = validateMenuImage(buffer);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.error }, { status: 400 });
+      }
+      filename = check.filename;
 
       const uploadDir = path.join(process.cwd(), "public", "uploads", "menu");
       await mkdir(uploadDir, { recursive: true });

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
+import { validateMenuImage } from "@/lib/upload";
 
 // PUT -> Update menu item
 export async function PUT(req, { params }) {
@@ -46,7 +47,11 @@ export async function PUT(req, { params }) {
     if (imageFile && imageFile.name && imageFile.size > 0) {
       const bytes = await imageFile.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      filename = `${Date.now()}-${imageFile.name}`;
+      const check = validateMenuImage(buffer);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.error }, { status: 400 });
+      }
+      filename = check.filename;
 
       const uploadDir = path.join(process.cwd(), "public", "uploads", "menu");
       await mkdir(uploadDir, { recursive: true });
