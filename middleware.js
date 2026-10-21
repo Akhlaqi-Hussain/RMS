@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getUserFromToken } from "./lib/auth";
+import { getActiveUser } from "./lib/session";
 
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
@@ -11,16 +11,50 @@ export async function middleware(req) {
 
   // Public route: login
   if (pathname === "/login") {
-    const user = await getUserFromToken(req);
+    const user = await getActiveUser(req);
     if (user) {
       return NextResponse.redirect(new URL("/main", req.url));
     }
     return NextResponse.next();
   }
 
+  // Protected API routes (SEC-1): every /api route needs a valid login,
+  // except the ones listed as public. Management APIs need the manager role,
+  // matching the existing page rules for /main/manage, /main/reports, /main/dashboard.
+  if (pathname.startsWith("/api/")) {
+    const publicApi = ["/api/login", "/api/logout", "/api/auth"];
+    if (publicApi.includes(pathname)) {
+      return NextResponse.next();
+    }
+
+    const user = await getActiveUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const isRead = req.method === "GET";
+    const managerOnly =
+      pathname === "/api/staff" ||
+      pathname.startsWith("/api/staff/") ||
+      pathname === "/api/dashboard" ||
+      pathname === "/api/reports" ||
+      (!isRead &&
+        (pathname === "/api/tables" ||
+          pathname.startsWith("/api/tables/") ||
+          pathname === "/api/menu" ||
+          pathname.startsWith("/api/menu/") ||
+          pathname === "/api/categories"));
+
+    if (managerOnly && user.role !== "manager") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    return NextResponse.next();
+  }
+
   // Protected routes: /main
   if (pathname.startsWith("/main")) {
-    const user = await getUserFromToken(req);
+    const user = await getActiveUser(req);
     if (!user) {
       // Invalid or missing token → redirect to login and clear cookie
       const res = NextResponse.redirect(new URL("/login", req.url));
@@ -48,5 +82,13 @@ export async function middleware(req) {
 }
 
 export const config = {
-  matcher: ["/login", "/main/:path*"],
+  // SEC-6: Node.js runtime so the middleware can check the account in the
+  // database (getActiveUser in lib/session.js; stable since Next.js 15.5).
+  runtime: "nodejs",
+  // The menu routes (/api/menu, /api/menu/<id>) are NOT run through this
+  // middleware: in production, Next.js 15.5 breaks request bodies larger than
+  // about 1 MB that pass through Node.js middleware, which would break picture
+  // uploads. Those two routes apply exactly the same checks themselves via
+  // requireActiveUser() from lib/session.js.
+  matcher: ["/login", "/main/:path*", "/api/((?!menu(?:/|$)).*)"],
 };

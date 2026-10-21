@@ -1,19 +1,36 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { getUserFromToken } from "@/lib/auth";
+import { publicErrorMessage, errorStatus } from "@/lib/errors";
+
+// SEC-5: order access rules.
+// - A waiter may only open, cancel or send to the kitchen his/her OWN orders
+//   (the orders list already shows waiters only their own orders).
+// - A chef may open orders and send them to the kitchen, but may not cancel.
+// - Managers and cashiers keep full access.
+// BUG-2: every query uses pool.query(), which always returns its connection to
+// the pool (the old code could keep connections forever and freeze the app).
+
+async function findOrderOwner(id) {
+  const [rows] = await pool.query("SELECT staff_id FROM orders WHERE order_id = ?", [id]);
+  return rows[0] || null;
+}
+
+function isOtherWaitersOrder(user, order) {
+  return user.role === "waiter" && Number(order.staff_id) !== Number(user.id);
+}
 
 //Add items to an existing order
 export async function POST(req, { params }) {
   try {
     const user = await getUserFromToken(req);
-    if (!user.id) {
+    if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { orderId, items } = await req.json();
 
     if (!orderId || !items?.length) {
-      console.log(orderId, items);
       return NextResponse.json(
         { error: "Order ID and items are required" },
         { status: 400 }
@@ -32,7 +49,10 @@ export async function POST(req, { params }) {
     return NextResponse.json({ success: true, orderId });
   } catch (err) {
     console.error("Add items error:", err);
-    return NextResponse.json({ error: "Failed to add items" }, { status: 500 });
+    return NextResponse.json(
+      { error: publicErrorMessage(err, "Failed to add items") },
+      { status: errorStatus(err) }
+    );
   }
 }
 // fetch order Details
@@ -53,11 +73,21 @@ export async function GET(req, { params }) {
         status: 401,
       });
     }
-    const conn = await pool.getConnection();
+
+    const owner = await findOrderOwner(id);
+    if (!owner) {
+      return new Response(JSON.stringify({ error: "Order not found" }), {
+        status: 404,
+      });
+    }
+    if (isOtherWaitersOrder(user, owner)) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+      });
+    }
 
     // Call the stored procedure
-    const [results] = await conn.query("CALL getOrderDetails(?)", [id]);
-    conn.release();
+    const [results] = await pool.query("CALL getOrderDetails(?)", [id]);
 
     // MySQL stored procedure returns an array of result sets
     const orderInfo = results[0]?.[0] || null; // first SELECT (order details)
@@ -106,10 +136,26 @@ export async function DELETE(req, { params }) {
       });
     }
 
-    const conn = await pool.getConnection();
+    if (user.role === "chef") {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+      });
+    }
+
+    const owner = await findOrderOwner(id);
+    if (!owner) {
+      return new Response(JSON.stringify({ error: "Order not found" }), {
+        status: 404,
+      });
+    }
+    if (isOtherWaitersOrder(user, owner)) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+      });
+    }
 
     // First cancel the order
-    await conn.query("CALL cancelOrder(?)", [id]);
+    await pool.query("CALL cancelOrder(?)", [id]);
 
     return new Response(
       JSON.stringify({
@@ -120,9 +166,10 @@ export async function DELETE(req, { params }) {
     );
   } catch (error) {
     console.error("Error canceling order:", error);
-    return new Response(JSON.stringify({ error: "Internal Server Error" }), {
-      status: 500,
-    });
+    return new Response(
+      JSON.stringify({ error: publicErrorMessage(error, "Internal Server Error") }),
+      { status: errorStatus(error) }
+    );
   }
 }
 
@@ -144,15 +191,19 @@ export async function PATCH(req, { params }) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const conn = await pool.getConnection();
+    const owner = await findOrderOwner(id);
+    if (!owner) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+    if (isOtherWaitersOrder(user, owner)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     // Update all order items status to 'in-progress' for this order
-    const [result] = await conn.query(
+    const [result] = await pool.query(
       "UPDATE order_items SET status = 'in-progress' WHERE order_id = ? AND status = 'pending'",
       [id]
     );
-
-    conn.release();
 
     if (result.affectedRows === 0) {
       return NextResponse.json(

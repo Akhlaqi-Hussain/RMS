@@ -2,9 +2,17 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
+import { validateMenuImage } from "@/lib/upload";
+import { publicErrorMessage, errorStatus } from "@/lib/errors";
+import { requireActiveUser } from "@/lib/session";
 
 // PUT -> Update menu item
 export async function PUT(req, { params }) {
+  // SEC-1/SEC-6: this route is skipped by middleware.js (large uploads), so it checks itself
+  const auth = await requireActiveUser(req, { managerOnly: true });
+  if (auth.response) return auth.response;
+
+
   try {
     const { id } = await params;
     const formData = await req.formData();
@@ -46,7 +54,11 @@ export async function PUT(req, { params }) {
     if (imageFile && imageFile.name && imageFile.size > 0) {
       const bytes = await imageFile.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      filename = `${Date.now()}-${imageFile.name}`;
+      const check = validateMenuImage(buffer);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.error }, { status: 400 });
+      }
+      filename = check.filename;
 
       const uploadDir = path.join(process.cwd(), "public", "uploads", "menu");
       await mkdir(uploadDir, { recursive: true });
@@ -79,12 +91,20 @@ export async function PUT(req, { params }) {
     return NextResponse.json(result);
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: publicErrorMessage(error) },
+      { status: errorStatus(error) }
+    );
   }
 }
 
 // PATCH -> Update menu item status only
 export async function PATCH(req, { params }) {
+  // SEC-1/SEC-6: this route is skipped by middleware.js (large uploads), so it checks itself
+  const auth = await requireActiveUser(req, { managerOnly: true });
+  if (auth.response) return auth.response;
+
+
   try {
     const { id } = await params;
     const { is_active } = await req.json();
@@ -139,6 +159,11 @@ export async function PATCH(req, { params }) {
 
 // DELETE -> Delete menu item
 export async function DELETE(req, { params }) {
+  // SEC-1/SEC-6: this route is skipped by middleware.js (large uploads), so it checks itself
+  const auth = await requireActiveUser(req, { managerOnly: true });
+  if (auth.response) return auth.response;
+
+
   try {
     const { id } = await params;
 
@@ -206,6 +231,11 @@ export async function DELETE(req, { params }) {
 
 // GET -> Get single menu item
 export async function GET(req, { params }) {
+  // SEC-1/SEC-6: this route is skipped by middleware.js (large uploads), so it checks itself
+  const auth = await requireActiveUser(req);
+  if (auth.response) return auth.response;
+
+
   try {
     const { id } = await params;
 

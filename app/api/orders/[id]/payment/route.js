@@ -1,5 +1,6 @@
 import pool from "@/lib/db";
 import { getUserFromToken } from "@/lib/auth";
+import { publicErrorMessage, errorStatus } from "@/lib/errors";
 
 // Confirm payment
 export async function POST(req) {
@@ -30,16 +31,15 @@ export async function POST(req) {
       );
     }
 
-    const conn = await pool.getConnection();
     console.log(`confirmPayment(${order_id}, ${subtotal}, ${discount})`);
 
     // Call confirmPayment procedure
-    const [results] = await conn.query("CALL confirmPayment(?, ?, ?)", [
+    // BUG-2: pool.query() always returns its connection to the pool, even on errors
+    const [results] = await pool.query("CALL confirmPayment(?, ?, ?)", [
       order_id,
       subtotal,
       discount,
     ]);
-    conn.release();
 
     // results[0] contains SELECT from procedure
     const paymentResult = results?.[0]?.[0] || null;
@@ -56,8 +56,8 @@ export async function POST(req) {
   } catch (error) {
     console.error("Payment error:", error);
     return new Response(
-      JSON.stringify({ error: "Failed to process payment" }),
-      { status: 500 }
+      JSON.stringify({ error: publicErrorMessage(error, "Failed to process payment") }),
+      { status: errorStatus(error) }
     );
   }
 }

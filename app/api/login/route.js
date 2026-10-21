@@ -2,6 +2,7 @@ import pool from "@/lib/db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
+import { publicErrorMessage, errorStatus } from "@/lib/errors";
 
 export async function POST(req) {
   try {
@@ -68,7 +69,7 @@ export async function POST(req) {
   } catch (error) {
     console.error(error);
     return NextResponse.json(
-      { success: false, message: error.message },
+      { success: false, message: publicErrorMessage(error) },
       { status: 500 }
     );
   }

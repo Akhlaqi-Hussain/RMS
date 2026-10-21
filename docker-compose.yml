@@ -1,0 +1,35 @@
+name: rms
+
+# RMS — local development/test database (MySQL 8.4 LTS) in Docker.
+# Start:  docker compose --env-file .env.local up -d
+# Stop:   docker compose --env-file .env.local stop      (keeps all data)
+# Passwords come from your private .env.local file (never committed to Git).
+services:
+  db:
+    image: mysql:8.4
+    container_name: rms-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env.local}
+      RMS_APP_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env.local}
+      TZ: Asia/Kabul
+    command:
+      - --default-time-zone=+04:30
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      # 127.0.0.1 = reachable ONLY from this PC (not from the network).
+      # 3307 on your PC → 3306 inside the container (XAMPP keeps 3306).
+      - "127.0.0.1:${DB_PORT:-3307}:3306"
+    volumes:
+      - rms_mysql_data:/var/lib/mysql
+      - ./database:/rms:ro
+      - ./database/docker-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  rms_mysql_data:
