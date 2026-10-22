@@ -7,6 +7,7 @@ import {
   formatNumber as fmtNumber,
   formatMoney,
 } from "@/lib/i18n/format";
+import { RTL_FONT_STACK, rtlFontFaceCss, PRINT_WHEN_READY } from "@/lib/i18n/fonts";
 
 // I18N-01: the printed report follows the user's language and text direction.
 export function printReport(data, columns, title, locale) {
@@ -114,13 +115,14 @@ export function printReport(data, columns, title, locale) {
         <meta charset="UTF-8" />
         <title>${title}</title>
         <style>
+          ${dir === "rtl" ? rtlFontFaceCss(window.location.origin) : ""}
           * { 
             margin: 0; 
             padding: 0; 
             box-sizing: border-box; 
           }
           body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: ${dir === "rtl" ? RTL_FONT_STACK : "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"};
             direction: ${dir};
             margin: 0 auto;
             background: white;
@@ -314,12 +316,7 @@ export function printReport(data, columns, title, locale) {
         </div>
 
         <script>
-          window.onload = function() {
-            window.print();
-            setTimeout(() => {
-              window.close();
-            }, 500);
-          };
+${PRINT_WHEN_READY(500)}
         </script>
       </body>
     </html>

@@ -29,7 +29,6 @@ export async function POST(req) {
       );
     }
 
-    console.log(`CALL ${procedureName}('${startDate}', '${endDate}')`);
     // Execute the stored procedure
     const [rows] = await pool.query(`CALL ${procedureName}(?, ?)`, [
       startDate,

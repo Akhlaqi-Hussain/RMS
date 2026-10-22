@@ -142,7 +142,7 @@ export async function PUT(request, { params }) {
 // PATCH -> Update staff member status only
 export async function PATCH(req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { is_active } = await req.json();
 
     // Validate input

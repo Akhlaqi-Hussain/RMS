@@ -121,7 +121,8 @@
     "dashboardFailed": "ډشبورډ پورته نه شو",
     "reportFailed": "راپور جوړ نه شو",
     "reportTypeInvalid": "د راپور ډول سم نه دی",
-    "reportFieldsRequired": "د راپور ډول، د پیل نېټه او د پای نېټه اړین دي"
+    "reportFieldsRequired": "د راپور ډول، د پیل نېټه او د پای نېټه اړین دي",
+    "categoryTaken": "دا کټګوري مخکې شته"
   },
   "login": {
     "welcome": "ښه راغلاست",
@@ -204,7 +205,9 @@
     "viewDetails": "جزئیات کتل ←",
     "emptyTitle": "فرمایش نشته",
     "emptyText": "اوس مهال په سیستم کې هېڅ فعال فرمایش نه دی ثبت شوی.",
-    "emptyHint": "د نوي فرمایش لپاره مینو ته لاړ شئ."
+    "emptyHint": "د نوي فرمایش لپاره مینو ته لاړ شئ.",
+    "statusPaid": "تادیه شوی",
+    "statusCancelled": "لغوه شوی"
   },
   "orderDetails": {
     "title": "د فرمایش جزئیات ({id})",
@@ -380,7 +383,8 @@
     "fieldImage": "د توکي انځور",
     "optional": "(اختیاري)",
     "uploadHint": "د انځور پورته کولو لپاره کلیک وکړئ",
-    "allowedFormats": "JPG، PNG یا WEBP — تر ۵MB پورې"
+    "allowedFormats": "JPG، PNG یا WEBP — تر ۵MB پورې",
+    "categoryFailed": "کټګوري زیاته نه شوه"
   },
   "manageStaff": {
     "saveFailed": "د کارکوونکي معلومات خوندي نه شول: {reason}",

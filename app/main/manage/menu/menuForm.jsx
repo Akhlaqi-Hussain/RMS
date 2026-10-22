@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
 import { useLanguage } from "@/context/LanguageContext";
 import {
   menuSchema,
@@ -28,7 +29,7 @@ const MenuForm = ({
   });
 
   const [errors, setErrors] = useState({});
-  const { t, formatNumber } = useLanguage();
+  const { t, tServer, formatNumber } = useLanguage();
   const [touched, setTouched] = useState({});
   const [categories, setCategories] = useState([]);
   const [newCategory, setNewCategory] = useState("");
@@ -140,9 +141,14 @@ const MenuForm = ({
         setFormData((prev) => ({ ...prev, category: newCat.id }));
         setNewCategory("");
         setIsAddingCategory(false);
+      } else {
+        // BUG-9: tell the user why the category was not added
+        const data = await res.json().catch(() => ({}));
+        toast.error(tServer(data.error, "manageMenu.categoryFailed"));
       }
     } catch (err) {
       console.error("Error adding category:", err);
+      toast.error(t("common.networkError"));
     }
   };
 

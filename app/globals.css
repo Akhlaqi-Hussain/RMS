@@ -48,11 +48,28 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* I18N-01: Dari and Pashto need fonts that contain all Pashto letters
-   (ټ ډ ړ ږ ښ ګ ڼ ې ۍ). These are installed on Windows, Android and macOS. */
+/* FONT-1: Dari and Pashto use Vazirmatn ("Vazir"), with Noto Sans Arabic as
+   fallback (it also draws the ؋ sign). Both are stored in public/fonts, so they
+   work without internet. Both contain all Pashto letters (ټ ډ ړ ږ ښ ګ ڼ ې ۍ). */
+@font-face {
+  font-family: "Vazirmatn";
+  src: url("/fonts/Vazirmatn-wght.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Noto Sans Arabic";
+  src: url("/fonts/NotoSansArabic-wght.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+
 html[lang="fa-AF"] body,
 html[lang="ps-AF"] body {
-  font-family: Tahoma, "Segoe UI", "Noto Naskh Arabic", "Noto Sans Arabic", Arial, sans-serif;
+  font-family: "Vazirmatn", "Noto Sans Arabic", Tahoma, "Segoe UI", Arial, sans-serif;
   line-height: 1.7;
 }
 

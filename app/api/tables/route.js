@@ -19,6 +19,13 @@ export async function POST(req) {
   try {
     const { table_no } = await req.json();
 
+    if (!table_no || String(table_no).trim().length === 0) {
+      return NextResponse.json(
+        { error: "شماره میز الزامی است" },
+        { status: 400 }
+      );
+    }
+
     // Check for duplicate table number
     const [existing] = await pool.query(
       "SELECT table_id FROM tables WHERE table_no = ?",
@@ -38,7 +45,7 @@ export async function POST(req) {
     );
 
     const [newTable] = await pool.query(
-      "SELECT table_id, table_no is_active FROM tables WHERE table_id = ?",
+      "SELECT table_id, table_no, is_active FROM tables WHERE table_id = ?",
       [result.insertId]
     );
 

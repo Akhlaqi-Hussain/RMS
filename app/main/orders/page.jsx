@@ -136,15 +136,18 @@ export default function OrdersPage() {
                   <div className="mt-4 flex justify-between items-center">
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        order.status === "completed"
+                        // BUG-11: the database uses open / closed / cancelled
+                        order.status === "closed"
                           ? "bg-green-100 text-green-800"
-                          : order.status === "pending"
-                          ? "bg-yellow-100 text-yellow-800"
+                          : order.status === "cancelled"
+                          ? "bg-red-100 text-red-800"
                           : "bg-blue-100 text-blue-800"
                       }`}
                     >
-                      {order.status === "completed"
-                        ? t("orders.statusCompleted")
+                      {order.status === "closed"
+                        ? t("orders.statusPaid")
+                        : order.status === "cancelled"
+                        ? t("orders.statusCancelled")
                         : order.status === "open"
                         ? t("orders.statusOpen")
                         : t("orders.statusOther")}

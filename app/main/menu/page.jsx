@@ -51,7 +51,12 @@ export default function MenuPage() {
           : "/api/menu";
         const res = await fetch(url);
         if (!res.ok) throw new Error(t("menu.itemsFailed"));
-        const data = await res.json();
+        const all = await res.json();
+        // D7: inactive items cannot be ordered, so they are not offered here
+        // (Manage → Menu still lists them so they can be re-activated)
+        const data = Array.isArray(all)
+          ? all.filter((item) => item.is_active === undefined || Number(item.is_active) === 1)
+          : [];
         setMenuItems(data);
         setFilteredItems(data);
         setError(null);

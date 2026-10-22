@@ -1,6 +1,8 @@
-import React from "react";
-const page = () => {
-  return <></>;
-};
+import { redirect } from "next/navigation";
 
-export default page;
+// HOME-1: the address "/" used to show an empty page. Send visitors to the
+// login page; a user who is already signed in is then forwarded to /main by
+// middleware.js.
+export default function Home() {
+  redirect("/login");
+}

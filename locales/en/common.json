@@ -121,7 +121,8 @@
     "dashboardFailed": "Could not load the dashboard",
     "reportFailed": "Could not create the report",
     "reportTypeInvalid": "Invalid report type",
-    "reportFieldsRequired": "Report type, start date and end date are required"
+    "reportFieldsRequired": "Report type, start date and end date are required",
+    "categoryTaken": "This category already exists"
   },
   "login": {
     "welcome": "Welcome",
@@ -204,7 +205,9 @@
     "viewDetails": "View details →",
     "emptyTitle": "No orders",
     "emptyText": "There are no active orders in the system right now.",
-    "emptyHint": "To create a new order, go to the menu."
+    "emptyHint": "To create a new order, go to the menu.",
+    "statusPaid": "Paid",
+    "statusCancelled": "Cancelled"
   },
   "orderDetails": {
     "title": "Order details ({id})",
@@ -380,7 +383,8 @@
     "fieldImage": "Item image",
     "optional": "(optional)",
     "uploadHint": "Click to upload an image",
-    "allowedFormats": "JPG, PNG or WEBP — up to 5MB"
+    "allowedFormats": "JPG, PNG or WEBP — up to 5MB",
+    "categoryFailed": "Could not add the category"
   },
   "manageStaff": {
     "saveFailed": "Could not save the staff member: {reason}",

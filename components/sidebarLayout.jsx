@@ -64,10 +64,12 @@ export default function SidebarLayout({ children }) {
 
     // Define role-based permissions
     const permissions = {
-      dashboard: ["manager", "cashier"],
+      // BUG-7: Dashboard and Reports are manager-only (middleware.js and the
+      // APIs already refuse other roles), so cashiers no longer see dead links.
+      dashboard: ["manager"],
       menu: ["manager", "cashier", "waiter", "chef"],
       orders: ["manager", "cashier", "waiter", "chef"],
-      reports: ["manager", "cashier"],
+      reports: ["manager"],
       manage: ["manager"],
     };
 
