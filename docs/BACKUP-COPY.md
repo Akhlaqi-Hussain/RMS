@@ -15,7 +15,7 @@ One of these:
 
 A backup is about 0.5 MB plus the size of the menu pictures.
 
-**The second copy is not cleaned up automatically.** The main folder keeps about 24 files (7 daily, 5 weekly and 12 monthly). The copy folder keeps **every** backup, which is about one file per night, or about 365 a year. With 10 MB of pictures, that's about 4 GB a year. Every few months, delete the old files that aren't `…monthly…` files by hand.
+**The copy folder is cleaned up the same way as the main folder.** It keeps 7 daily, 5 weekly, 12 monthly, 10 manual and 5 pre-restore backups, which is about 40 files. Only files named exactly like RMS backups are ever removed; anything else you put in that folder is left alone.
 
 ## Steps
 
@@ -53,7 +53,7 @@ A backup is about 0.5 MB plus the size of the menu pictures.
 ## Good habits
 
 - **Once a week**, look at Manage → Backups. The last backup should be from last night, and the card should be green, not amber.
-- **Once a month**, copy the newest `…monthly.tar.gz` to a USB stick that you keep **at home**. That covers fire and theft.
+- **Once a month**, copy the newest `…monthly.tar.gz` to a USB stick that you keep **at home**. That covers fire and theft. Keep it in a **different folder** from `BACKUP_COPY_DIR`, so the clean-up never touches it.
 - **If the USB disk is unplugged**, the main backup still works and the log notes that the copy failed. Plug it back in and press Back up now.
 - **If the drive letter changes** (another USB device took `E:`), set the letter again in Windows Disk Management, or update `.env.local`.
 
