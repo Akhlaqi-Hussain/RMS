@@ -6,12 +6,13 @@
 
 Trilingual (**English · دری · پښتو**) · fully **offline** · role-based access
 
-![Next.js](https://img.shields.io/badge/Next.js-15.5-000000?logo=nextdotjs&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8.4-4479A1?logo=mysql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A520-339933?logo=nodedotjs&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A520.9-339933?logo=nodedotjs&logoColor=white)
+![License](https://img.shields.io/badge/license-proprietary-lightgrey)
 
 </div>
 
@@ -38,6 +39,7 @@ Trilingual (**English · دری · پښتو**) · fully **offline** · role-base
 - [Security](#security)
 - [Project structure](#project-structure)
 - [Before going to production](#before-going-to-production)
+- [License](#license)
 - [Credits](#credits)
 
 ## Features
@@ -47,6 +49,7 @@ Trilingual (**English · دری · پښتو**) · fully **offline** · role-base
 | 🧾 **Ordering** | Browse the menu by category, add to a cart, place an order for a table or add items to an open order |
 | 👨‍🍳 **Kitchen** | A kitchen ticket prints automatically for new orders; items move from *pending* to *in progress* |
 | 💵 **Payment** | Discounts, confirmation, printed customer bill; totals are always recalculated by the database |
+| 🔒 **Safe saving** | An order and its items are saved together in one database transaction — never half-saved |
 | 📊 **Dashboard** | Total and today's revenue, discounts, orders, recent orders and the most popular items |
 | 📈 **Reports** | Sales, financial, orders and products reports for any date range, printable |
 | 🛠️ **Management** | Menu items with pictures, categories, staff accounts and roles, tables (active/inactive) |
@@ -83,14 +86,14 @@ a role takes effect immediately.
 
 | Layer | Technology |
 |---|---|
-| Front end | Next.js 15 (App Router), React 19, Tailwind CSS 4, Framer Motion, React Hot Toast |
+| Front end | Next.js 16 (App Router), React 19, Tailwind CSS 4, Framer Motion, React Hot Toast |
 | Back end | Next.js route handlers (`app/api`), JWT session cookie, bcrypt password hashes |
 | Database | MySQL 8.4 with stored procedures, run in Docker |
 | i18n | Own lightweight layer: JSON dictionaries, `Intl` number formats, `jalaali-js` for the solar calendar |
 
 ```mermaid
 flowchart LR
-    B["Browser<br/>(staff device)"] -->|pages and API calls| M["middleware.js<br/>login and role check"]
+    B["Browser<br/>(staff device)"] -->|pages and API calls| M["proxy.js<br/>login and role check"]
     M --> P["Pages<br/>app/main/*"]
     M --> A["API routes<br/>app/api/*"]
     A -->|mysql2 pool| D[("MySQL 8.4<br/>stored procedures")]
@@ -99,7 +102,7 @@ flowchart LR
 
 ## Getting started
 
-**Requirements:** Node.js 20+ LTS, Git, and Docker Desktop (running). Internet is needed only once,
+**Requirements:** Node.js 20.9+ LTS, Git, and Docker Desktop (running). Internet is needed only once,
 to download the code and the npm packages.
 
 ```bash
@@ -143,6 +146,7 @@ npm run dev
 | Start the database | `docker compose --env-file .env.local up -d` |
 | Start the app (development) | `npm run dev` |
 | Lint | `npm run lint` |
+| API regression test (app running on `rms_test`) | `npm run test:api` |
 | Production build and start | `npm run build` then `npm start` |
 | Stop the database (data is kept) | `docker compose --env-file .env.local stop` |
 
@@ -192,12 +196,16 @@ Prices and bill totals are always taken from the database, never from the browse
 
 ## Testing
 
-An API regression test (`rms-api-test.mjs`, kept outside this repository) checks login, roles,
-menu, tables, staff, orders, kitchen, payment, dashboard, reports and upload safety — **129 checks**.
+The API regression test in [`tests/api/rms-api-test.mjs`](tests/api/rms-api-test.mjs) checks login,
+roles, menu, tables, staff, orders (including all-or-nothing saving), kitchen, payment, dashboard,
+reports and upload safety — **132 checks**. It needs no extra packages.
 
 1. Window A: `set DB_NAME=rms_test` (macOS/Linux: `export DB_NAME=rms_test`), then `npm start`.
-2. Window B: `node rms-api-test.mjs http://localhost:3000 <path to this project>` → expect `FAIL=0`.
+2. Window B, in the project folder: `npm run test:api` → expect `FAIL=0`.
 3. **Close window A afterwards**, because the `DB_NAME` setting lasts for the whole window.
+
+The test creates its own uniquely named records and only reads the sample data, so it can be
+run many times. Never point it at a real (production) database.
 
 > `rms_dev` and `rms_test` share the picture folder `public/uploads/menu`: deleting a sample menu
 > item in either database also deletes its picture for the other.
@@ -209,6 +217,7 @@ menu, tables, staff, orders, kitchen, payment, dashboard, reports and upload saf
 - Uploaded pictures are checked by their real content (JPEG/PNG/WEBP, max 5 MB) and renamed.
 - Database errors are never shown to users; friendly messages only.
 - The database port is bound to `127.0.0.1`.
+- Production dependencies: `npm audit --omit=dev` reports no known vulnerabilities (Next.js 16.3).
 
 ## Project structure
 
@@ -223,7 +232,8 @@ utils/          bill and report printing
 database/       migrations, seed data, Docker init script
 public/         bundled fonts and uploaded menu pictures
 docs/           screenshots for this README
-middleware.js   page and API protection
+tests/api/      API regression test (npm run test:api)
+proxy.js        page and API protection (called middleware.js before Next.js 16)
 ```
 
 ## Before going to production
@@ -232,6 +242,11 @@ middleware.js   page and API protection
 - The first manager account created by a one-time script
 - HTTPS (or a trusted local network only) and automatic off-machine backups
 - Not yet tested: printing on a real receipt printer, Safari on iPhone
+
+## License
+
+Proprietary — **all rights reserved**. See [`LICENSE`](LICENSE). The bundled fonts keep their own
+SIL Open Font License.
 
 ## Credits
 
