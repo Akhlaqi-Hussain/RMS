@@ -7,6 +7,7 @@ import {
   formatNumber as fmtNumber,
   formatMoney,
 } from "@/lib/i18n/format";
+import { RTL_FONT_STACK, rtlFontFaceCss, PRINT_WHEN_READY } from "@/lib/i18n/fonts";
 
 // I18N-01: printouts follow the user's language and text direction.
 function printSettings(locale) {
@@ -19,9 +20,9 @@ function printSettings(locale) {
     lang: getLangTag(loc),
     start: rtl ? "right" : "left",
     end: rtl ? "left" : "right",
-    font: rtl
-      ? "Tahoma, 'Segoe UI', 'Noto Naskh Arabic', Arial, sans-serif"
-      : "'SF Mono', 'Courier New', monospace",
+    font: rtl ? RTL_FONT_STACK : "'SF Mono', 'Courier New', monospace",
+    // FONT-1: the print window loads the same offline fonts as the app
+    fontFaces: rtl ? rtlFontFaceCss(window.location.origin) : "",
     num: (n) => fmtNumber(n, loc),
     money: (n) => formatMoney(n, loc),
     date: (d) => formatDate(d, loc),
@@ -56,6 +57,7 @@ export function printKitchenBill(order, items, locale) {
         <title>${p.tr("print.kitchenTitle")}</title>
         <meta charset="UTF-8">
         <style>
+          ${p.fontFaces}
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
             font-family: ${p.font}; 
@@ -165,17 +167,16 @@ export function printKitchenBill(order, items, locale) {
         </div>
 
         <script>
-          window.onload = function() {
-            window.print();
-            setTimeout(() => window.close(), 300);
-          };
+${PRINT_WHEN_READY(300)}
         </script>
       </body>
     </html>
   `;
 
   printWindow.document.write(kitchenContent);
-  //   printWindow.document.close();
+  // BUG-13: without close() the page never finishes loading, so the print
+  // dialog for the kitchen bill did not open by itself.
+  printWindow.document.close();
 }
 
 // Print Customer Bill
@@ -203,6 +204,7 @@ export function printCustomerBill(order, items, bill, locale) {
         <title>${p.tr("print.billTitle")}</title>
         <meta charset="UTF-8">
         <style>
+          ${p.fontFaces}
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
             font-family: ${p.font}; 
@@ -359,10 +361,7 @@ export function printCustomerBill(order, items, bill, locale) {
         </div>
 
         <script>
-          window.onload = function() {
-            window.print();
-            setTimeout(() => window.close(), 500);
-          };
+${PRINT_WHEN_READY(500)}
         </script>
       </body>
     </html>

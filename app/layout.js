@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { cookies } from "next/headers";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
@@ -10,14 +10,20 @@ import {
   normalizeLocale,
 } from "@/lib/i18n/config";
 
-const geistSans = Geist({
+// OFF-1: Geist is loaded from app/fonts instead of Google Fonts, so the
+// app builds and runs without an internet connection.
+const geistSans = localFont({
+  src: "./fonts/Geist-Variable.woff2",
   variable: "--font-geist-sans",
-  subsets: ["latin"],
+  weight: "100 900",
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
+const geistMono = localFont({
+  src: "./fonts/GeistMono-Variable.woff2",
   variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: "100 900",
+  display: "swap",
 });
 
 export const metadata = {
