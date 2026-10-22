@@ -1,23 +1,25 @@
 import { z } from "zod";
 
+// I18N-01: error messages are translation keys; forms show them with t().
+
 // Base schema (shared rules)
 const baseMenuSchema = {
   name: z
     .string()
-    .min(2, "نام باید حداقل ۲ کاراکتر باشد")
-    .max(100, "نام نمی‌تواند بیشتر از ۱۰۰ کاراکتر باشد"),
+    .min(2, "validation.nameMin")
+    .max(100, "validation.nameMax"),
 
   description: z
     .string()
-    .min(5, "توضیحات باید حداقل ۵ کاراکتر باشد")
-    .max(500, "توضیحات نمی‌تواند بیشتر از ۵۰۰ کاراکتر باشد"),
+    .min(5, "validation.descriptionMin")
+    .max(500, "validation.descriptionMax"),
 
-  category: z.coerce.number().min(1, "لطفاً یک دسته‌بندی انتخاب کنید"),
+  category: z.coerce.number().min(1, "validation.categoryRequired"),
 
   price: z.coerce
-    .number({ invalid_type_error: "قیمت باید عدد باشد" })
-    .positive("قیمت باید عدد مثبت باشد")
-    .max(1000000, "قیمت بیش از حد بزرگ است"),
+    .number({ invalid_type_error: "validation.priceNumber" })
+    .positive("validation.pricePositive")
+    .max(1000000, "validation.priceMax"),
 
   image: z.any().refine(
     (file) => {
@@ -32,8 +34,7 @@ const baseMenuSchema = {
       );
     },
     {
-      message:
-        "لطفاً یک تصویر معتبر (jpeg/png/webp) با حجم کمتر از ۵MB انتخاب کنید",
+      message: "validation.imageInvalid",
     }
   ),
 };
@@ -42,7 +43,7 @@ const baseMenuSchema = {
 export const menuSchema = z.object({
   ...baseMenuSchema,
   image: baseMenuSchema.image.refine((file) => file !== undefined, {
-    message: "تصویر الزامی است",
+    message: "validation.imageRequired",
   }),
 });
 
@@ -65,7 +66,7 @@ export const validateField = (schema, fieldName, value) => {
       );
       if (fieldError) return { isValid: false, error: fieldError.message };
     }
-    return { isValid: false, error: "خطای نامشخص" };
+    return { isValid: false, error: "common.unknownError" };
   }
 };
 
@@ -86,6 +87,6 @@ export const validateForm = (schema, formData) => {
       });
       return { isValid: false, errors };
     }
-    return { isValid: false, errors: { general: "خطای نامشخص" } };
+    return { isValid: false, errors: { general: "common.unknownError" } };
   }
 };

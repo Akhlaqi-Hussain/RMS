@@ -3,11 +3,13 @@ import { useEffect, useState, useRef } from "react";
 import MenuList from "./menuList";
 import MenuForm from "./menuForm";
 import toast from "react-hot-toast";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function MenuManagementPage() {
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const { t } = useLanguage();
 
   // modal/form control
   const [showForm, setShowForm] = useState(false);
@@ -101,14 +103,14 @@ export default function MenuManagementPage() {
 
       // Show success message
       toast.success(
-        editingItem ? "آیتم با موفقیت ویرایش شد" : "آیتم با موفقیت اضافه شد"
+        editingItem ? t("server.itemUpdated") : t("server.itemAdded")
       );
 
       await fetchMenuItems(); // refresh list
       handleCloseForm();
     } catch (err) {
       console.error("Error saving item:", err);
-      toast.error(`خطا`);
+      toast.error(t("manageMenu.saveFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -132,18 +134,18 @@ export default function MenuManagementPage() {
         throw new Error(errorData.error || "Failed to update status");
       }
 
-      toast.success(newStatus ? "آیتم فعال شد" : "آیتم غیرفعال شد");
+      toast.success(newStatus ? t("server.itemActivated") : t("server.itemDeactivated"));
 
       await fetchMenuItems(); // refresh list
     } catch (err) {
       console.error("Error updating status:", err);
-      toast.error("خطا در تغییر وضعیت آیتم");
+      toast.error(t("server.statusUpdateFailed"));
     }
   }
 
   // Handle delete menu item
   async function handleDeleteItem(itemId) {
-    if (!confirm("آیا از حذف این آیتم اطمینان دارید؟")) {
+    if (!confirm(t("manageMenu.deleteConfirm"))) {
       return;
     }
 
@@ -157,11 +159,11 @@ export default function MenuManagementPage() {
         throw new Error(errorData.error || "Failed to delete menu item");
       }
 
-      toast.success("آیتم با موفقیت حذف شد");
+      toast.success(t("server.itemDeleted"));
       await fetchMenuItems(); // refresh list
     } catch (err) {
       console.error("Error deleting menu item:", err);
-      toast.error("خطا در حذف آیتم");
+      toast.error(t("server.itemDeleteFailed"));
     }
   }
 
@@ -200,14 +202,14 @@ export default function MenuManagementPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">مدیریت آیتم‌های منو</h2>
+      <div className="flex flex-wrap gap-3 justify-between items-center">
+        <h2 className="text-xl font-bold">{t("manageMenu.title")}</h2>
         <button
           onClick={handleOpenAddForm}
           disabled={submitting}
           className="bg-[color:var(--color-primary)] text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity duration-200 disabled:opacity-50"
         >
-          {submitting ? "در حال ثبت..." : "افزودن آیتم جدید"}
+          {submitting ? t("manageMenu.submitting") : t("manageMenu.addNew")}
         </button>
       </div>
 
@@ -236,10 +238,10 @@ export default function MenuManagementPage() {
             resetTrigger={resetTrigger}
             submitButtonText={
               submitting
-                ? "در حال ثبت..."
+                ? t("manageMenu.submitting")
                 : editingItem
-                ? "ویرایش آیتم"
-                : "ثبت آیتم"
+                ? t("manageMenu.update")
+                : t("manageMenu.create")
             }
             isSubmitting={submitting}
           />

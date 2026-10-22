@@ -15,7 +15,7 @@ import {
   validateForm,
 } from "@/schemas/reportSchema";
 import DataTable from "@/components/dataTable";
-import { formatJalaliDate } from "@/utils/dateUtils";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function ReportsPage() {
   const [formData, setFormData] = useState({ startDate: "", endDate: "" });
@@ -24,6 +24,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState([]);
   const [currentReportType, setCurrentReportType] = useState("");
+  const { t, locale, formatDate, formatMoney, formatNumber } = useLanguage();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -63,7 +64,7 @@ export default function ReportsPage() {
       // Show the first error to the user
       const firstErrorKey = Object.keys(formErrors)[0];
       if (firstErrorKey) {
-        toast.error(formErrors[firstErrorKey]);
+        toast.error(t(formErrors[firstErrorKey]));
       }
       return;
     }
@@ -84,23 +85,19 @@ export default function ReportsPage() {
 
       console.log(result.data);
       setReportData(result.data || []);
-      toast.success("گزارش با موفقیت تولید شد");
+      toast.success(t("reports.created"));
     } catch (error) {
       console.log("Error generating report: ", error);
-      toast.error("خطا در تولید گزارش");
+      toast.error(t("reports.failed"));
     } finally {
       setLoading(false);
     }
   };
 
   const getReportName = (type) => {
-    const map = {
-      sales: "فروش",
-      financial: "مالی",
-      orders: "سفارشات",
-      products: "محصولات",
-    };
-    return map[type] || type;
+    return ["sales", "financial", "orders", "products"].includes(type)
+      ? t(`reports.name.${type}`)
+      : type;
   };
 
   const handleQuickReport = (days) => {
@@ -124,14 +121,15 @@ export default function ReportsPage() {
 
   const handlePrint = () => {
     if (reportData.length === 0) {
-      toast.error("داده‌ای برای چاپ وجود ندارد");
+      toast.error(t("reports.nothingToPrint"));
       return;
     }
-    toast.success("آماده برای چاپ...");
+    toast.success(t("reports.readyToPrint"));
     printReport(
       reportData,
       getColumns(currentReportType),
-      `گزارش ${getReportName(currentReportType)}`
+      t("reports.reportTitle", { name: getReportName(currentReportType) }),
+      locale
     );
   };
 
@@ -139,26 +137,26 @@ export default function ReportsPage() {
     {
       type: "sales",
       icon: <FaChartBar className="text-blue-500 text-xl" />,
-      title: "گزارش فروش",
-      desc: "گزارش کامل فروش و درآمد",
+      title: t("reports.salesTitle"),
+      desc: t("reports.salesDesc"),
     },
     {
       type: "orders",
       icon: <FaShoppingCart className="text-green-500 text-xl" />,
-      title: "گزارش سفارشات",
-      desc: "سفارشات و وضعیت آن‌ها",
+      title: t("reports.ordersTitle"),
+      desc: t("reports.ordersDesc"),
     },
     {
       type: "financial",
       icon: <FaMoneyBillWave className="text-purple-500 text-xl" />,
-      title: "گزارش مالی",
-      desc: "وضعیت مالی و تراکنش‌ها",
+      title: t("reports.financialTitle"),
+      desc: t("reports.financialDesc"),
     },
     {
       type: "products",
       icon: <FaUtensils className="text-red-500 text-xl" />,
-      title: "گزارش محصولات",
-      desc: "عملکرد و فروش محصولات",
+      title: t("reports.productsTitle"),
+      desc: t("reports.productsDesc"),
     },
   ];
 
@@ -168,85 +166,90 @@ export default function ReportsPage() {
         return [
           {
             key: "date",
-            header: "تاریخ",
-            render: (value) => formatJalaliDate(value),
+            header: t("reports.colDate"),
+            render: (value) => formatDate(value),
           },
 
           {
             key: "total_orders",
-            header: "تعداد سفارش‌ها",
+            header: t("reports.colOrderCount"),
+            render: (value) => formatNumber(value),
           },
           {
             key: "total_sales",
-            header: "مجموع فروش",
-            render: (value) => `${value?.toLocaleString()} ؋`,
+            header: t("reports.colTotalSales"),
+            render: (value) => formatMoney(value),
           },
           {
             key: "total_discount",
-            header: "تخفیف",
-            render: (value) => `${value?.toLocaleString()} ؋`,
+            header: t("reports.colDiscount"),
+            render: (value) => formatMoney(value),
           },
           {
             key: "net_sales",
-            header: "مجموع",
-            render: (value) => `${value?.toLocaleString()} ؋`,
+            header: t("common.total"),
+            render: (value) => formatMoney(value),
           },
         ];
       case "products":
         return [
-          { key: "product_name", header: "نام محصول" },
-          { key: "total_qty", header: "تعداد فروخته شده" },
+          { key: "product_name", header: t("reports.colProduct") },
+          {
+            key: "total_qty",
+            header: t("reports.colQtySold"),
+            render: (value) => formatNumber(value),
+          },
           {
             key: "total_sales",
-            header: "درآمد کل",
-            render: (value) => `${value?.toLocaleString()} ؋`,
+            header: t("reports.colRevenue"),
+            render: (value) => formatMoney(value),
           },
           {
             key: "sales_percentage",
-            header: "درصد فروش",
-            render: (value) => `${value?.toLocaleString()}%`,
+            header: t("reports.colShare"),
+            render: (value) => `${formatNumber(value)}%`,
           },
         ];
       case "financial":
         return [
           {
             key: "total_sales",
-            header: "مجموع فروش",
-            render: (value) => `${value?.toLocaleString()} ؋`,
+            header: t("reports.colTotalSales"),
+            render: (value) => formatMoney(value),
           },
           {
             key: "total_discount",
-            header: "تخفیف",
-            render: (value) => `${value?.toLocaleString()} ؋`,
+            header: t("reports.colDiscount"),
+            render: (value) => formatMoney(value),
           },
           {
             key: "net_income",
-            header: "مجموع",
-            render: (value) => `${value?.toLocaleString()} ؋`,
+            header: t("common.total"),
+            render: (value) => formatMoney(value),
           },
         ];
       case "orders":
         return [
-          { key: "order_id", header: "شماره سفارش" },
-          { key: "table_no", header: "شماره میز" },
+          { key: "order_id", header: t("reports.colOrderNumber") },
+          { key: "table_no", header: t("reports.colTableNumber") },
           {
             key: "status",
-            header: "وضعیت",
+            header: t("common.status"),
             render: (value) => {
               switch (value) {
                 case "cancelled":
                   return (
-                    <span className="text-red-600 font-medium">لغو شده</span>
+                    <span className="text-red-600 font-medium">{t("reports.statusCancelled")}</span>
                   );
                 case "closed":
                   return (
                     <span className="text-green-600 font-medium">
-                      تکمیل شده
+                      {t("reports.statusClosed")}
                     </span>
                   );
                 case "open":
                   return (
-                    <span className="text-yellow-600 font-medium">باز</span>
+                    <span className="text-yellow-600 font-medium">{t("reports.statusOpen")}</span>
                   );
                 default:
                   return (
@@ -257,8 +260,8 @@ export default function ReportsPage() {
           },
           {
             key: "total_amount",
-            header: "مبلغ قابل پرداخت",
-            render: (value) => `${value?.toLocaleString()} ؋`,
+            header: t("reports.colAmountDue"),
+            render: (value) => formatMoney(value),
           },
         ];
       default:
@@ -273,11 +276,11 @@ export default function ReportsPage() {
     !errors.endDate;
 
   return (
-    <div className="min-h-screen p-4 md:p-6" dir="rtl">
+    <div className="min-h-screen p-1 sm:p-4 md:p-6">
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-4">
-          گزارشات
+          {t("reports.title")}
         </h1>
       </div>
 
@@ -285,7 +288,7 @@ export default function ReportsPage() {
       <div className="mb-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
           <div>
-            <label className="block text-sm mb-1">تاریخ شروع</label>
+            <label className="block text-sm mb-1">{t("reports.startDate")}</label>
             <input
               type="date"
               name="startDate"
@@ -300,12 +303,12 @@ export default function ReportsPage() {
               }`}
             />
             {errors.startDate && touched.startDate && (
-              <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>
+              <p className="text-red-500 text-xs mt-1">{t(errors.startDate)}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm mb-1">تاریخ پایان</label>
+            <label className="block text-sm mb-1">{t("reports.endDate")}</label>
             <input
               type="date"
               name="endDate"
@@ -320,7 +323,7 @@ export default function ReportsPage() {
               }`}
             />
             {errors.endDate && touched.endDate && (
-              <p className="text-red-500 text-xs mt-1">{errors.endDate}</p>
+              <p className="text-red-500 text-xs mt-1">{t(errors.endDate)}</p>
             )}
           </div>
         </div>
@@ -331,33 +334,33 @@ export default function ReportsPage() {
             onClick={() => handleQuickReport(1)}
             className="px-3 py-1 bg-gray-100 rounded text-sm border border-gray-200 hover:bg-gray-200 transition-colors"
           >
-            امروز
+            {t("reports.today")}
           </button>
           <button
             onClick={() => handleQuickReport(7)}
             className="px-3 py-1 bg-gray-100 rounded text-sm border border-gray-200 hover:bg-gray-200 transition-colors"
           >
-            ۷ روز
+            {t("reports.days", { count: formatNumber(7) })}
           </button>
           <button
             onClick={() => handleQuickReport(30)}
             className="px-3 py-1 bg-gray-100 rounded text-sm border border-gray-200 hover:bg-gray-200 transition-colors"
           >
-            ۳۰ روز
+            {t("reports.days", { count: formatNumber(30) })}
           </button>
         </div>
       </div>
 
       {/* Report Buttons */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {reportButtons.map((report) => (
           <button
             key={report.type}
             onClick={() => handleGenerateReport(report.type)}
             disabled={loading || !isFormValid}
-            className="bg-white p-4 rounded-lg shadow-md border-1 border-gray-200 text-right transition hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
+            className="bg-white p-4 rounded-lg shadow-md border-1 border-gray-200 text-start transition hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between gap-2 mb-2">
               {report.icon}
               <h3 className="font-semibold">{report.title}</h3>
             </div>
@@ -368,7 +371,7 @@ export default function ReportsPage() {
 
       {/* DataTable with Print Button */}
       <DataTable
-        title={`گزارش ${getReportName(currentReportType)}`}
+        title={t("reports.reportTitle", { name: getReportName(currentReportType) })}
         data={reportData}
         columns={getColumns(currentReportType)}
         loading={loading}
@@ -380,7 +383,7 @@ export default function ReportsPage() {
         <div className="bg-white bg-opacity-80 flex items-center justify-center z-50">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[color:var(--color-primary)] mx-auto mb-4"></div>
-            <p className="text-gray-600">در حال تولید گزارش...</p>
+            <p className="text-gray-600">{t("reports.generating")}</p>
           </div>
         </div>
       )}

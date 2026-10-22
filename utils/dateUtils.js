@@ -1,52 +1,13 @@
-import jalaali from "jalaali-js";
+import { formatDate, formatTime as formatTimeI18n } from "@/lib/i18n/format";
 
-export function formatJalaliDate(dateString) {
-  if (!dateString) return "-";
+// I18N-01: kept for compatibility. Dates are now formatted per language in
+// lib/i18n/format.js (Afghan solar calendar for Dari/Pashto, Gregorian for English).
+// Without a language these keep the old behaviour: Dari, Afghan solar calendar.
 
-  const date = new Date(dateString);
-  if (isNaN(date)) return "-";
-
-  // Convert to Jalali
-  const { jy, jm, jd } = jalaali.toJalaali(date);
-
-  // Dari (Solar Hijri) month names
-  const months = [
-    "حمل",
-    "ثور",
-    "جوزا",
-    "سرطان",
-    "اسد",
-    "سنبله",
-    "میزان",
-    "عقرب",
-    "قوس",
-    "جدی",
-    "دلو",
-    "حوت",
-  ];
-
-  // Dari weekdays
-  const weekdays = [
-    "يک‌شنبه",
-    "دوشنبه",
-    "سه‌شنبه",
-    "چهارشنبه",
-    "پنج‌شنبه",
-    "جمعه",
-    "شنبه",
-  ];
-
-  const weekday = weekdays[date.getDay()];
-  const month = months[jm - 1];
-
-  return `${weekday}، ${jd} ${month} ${jy}`;
+export function formatJalaliDate(dateString, locale = "fa") {
+  return formatDate(dateString, locale);
 }
 
-// dateUtils.js
-export function formatTime(dateString) {
-  return new Intl.DateTimeFormat("fa-AF", {
-    hour: "numeric",
-    minute: "numeric",
-    hour12: true,
-  }).format(new Date(dateString));
+export function formatTime(dateString, locale = "fa") {
+  return formatTimeI18n(dateString, locale);
 }

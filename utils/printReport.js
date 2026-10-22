@@ -1,9 +1,29 @@
 // utils/printReport.js
-import { restaurantInfo } from "./restaurantInfo";
-import { formatJalaliDate, formatTime } from "./dateUtils";
+import { translate } from "@/lib/i18n/translate";
+import { getDir, getLangTag, normalizeLocale } from "@/lib/i18n/config";
+import {
+  formatDate,
+  formatTime,
+  formatNumber as fmtNumber,
+  formatMoney,
+} from "@/lib/i18n/format";
 
-export function printReport(data, columns, title) {
+// I18N-01: the printed report follows the user's language and text direction.
+export function printReport(data, columns, title, locale) {
   if (!data || data.length === 0) return;
+
+  const loc = normalizeLocale(locale);
+  const tr = (key, vars) => translate(loc, key, vars);
+  const dir = getDir(loc);
+  const lang = getLangTag(loc);
+  const formatCurrency = (amount) => formatMoney(amount || 0, loc);
+  const formatNumber = (num) => fmtNumber(num || 0, loc);
+  const restaurant = {
+    name: tr("restaurant.name"),
+    address: tr("restaurant.address"),
+    phone: tr("restaurant.phone"),
+  };
+  const now = new Date();
 
   // Define keys to sum for totals
   const summableKeys = [
@@ -25,7 +45,7 @@ export function printReport(data, columns, title) {
   function renderValue(col, value, row) {
     switch (col.key) {
       case "date":
-        return formatJalaliDate(value);
+        return formatDate(value, loc);
       case "total_sales":
       case "total_discount":
       case "net_sales":
@@ -40,11 +60,11 @@ export function printReport(data, columns, title) {
       case "status":
         switch (value) {
           case "cancelled":
-            return `لغو شده`;
+            return tr("reports.statusCancelled");
           case "closed":
-            return `تکمیل شده`;
+            return tr("reports.statusClosed");
           case "open":
-            return `باز`;
+            return tr("reports.statusOpen");
           default:
             return value ?? "";
         }
@@ -71,7 +91,7 @@ export function printReport(data, columns, title) {
       ${columns
         .map((col, i) =>
           i === 0
-            ? "<td><strong>مجموع</strong></td>"
+            ? `<td><strong>${tr("common.total")}</strong></td>`
             : summableKeys.includes(col.key)
             ? `<td><strong>${
                 col.key.includes("sales") || col.key.includes("income")
@@ -89,7 +109,7 @@ export function printReport(data, columns, title) {
 
   const reportContent = `
     <!DOCTYPE html>
-    <html lang="fa" dir="rtl">
+    <html lang="${lang}" dir="${dir}">
       <head>
         <meta charset="UTF-8" />
         <title>${title}</title>
@@ -101,7 +121,7 @@ export function printReport(data, columns, title) {
           }
           body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            direction: rtl;
+            direction: ${dir};
             margin: 0 auto;
             background: white;
             color: #000;
@@ -236,13 +256,13 @@ export function printReport(data, columns, title) {
               }
               
               @bottom-left {
-                content: "صفحه " counter(page);
+                content: "${tr("print.page")} " counter(page);
                 font-size: 12px;
                 color: #666;
               }
               
               @bottom-right {
-                content: "تعداد رکوردها: ${formatNumber(data.length)}";
+                content: "${tr("print.recordCount", { count: formatNumber(data.length) })}";
                 font-size: 12px;
                 color: #666;
               }
@@ -250,7 +270,7 @@ export function printReport(data, columns, title) {
             
             @page :first {
               @top-center {
-                content: "${restaurantInfo.name} - ${title}";
+                content: "${restaurant.name} - ${title}";
               }
             }
           }
@@ -258,15 +278,13 @@ export function printReport(data, columns, title) {
       </head>
       <body>
         <div class="header">
-          <div class="restaurant-name">${restaurantInfo.name}</div>
+          <div class="restaurant-name">${restaurant.name}</div>
           <h2 class="report-title">${title}</h2>
           <div class="report-info">
-            تاریخ چاپ: ${formatJalaliDate(new Date())} - ${formatTime(
-    new Date()
-  )}
+            ${tr("print.printDate", { date: formatDate(now, loc), time: formatTime(now, loc) })}
           </div>
           <div class="report-info">
-            تعداد رکوردها: ${formatNumber(data.length)} مورد
+            ${tr("print.recordCount", { count: formatNumber(data.length) })}
           </div>
         </div>
 
@@ -288,24 +306,14 @@ export function printReport(data, columns, title) {
         </table>
 
         <div class="footer">
-          <div>${restaurantInfo.phone}</div>
-          <div>${restaurantInfo.address}</div>
+          <div dir="ltr">${restaurant.phone}</div>
+          <div>${restaurant.address}</div>
           <div class="print-date">
-            چاپ شده در ${formatJalaliDate(new Date())} ساعت ${formatTime(
-    new Date()
-  )}
+            ${tr("print.printedAt", { date: formatDate(now, loc), time: formatTime(now, loc) })}
           </div>
         </div>
 
         <script>
-          function formatCurrency(amount) {
-            return new Intl.NumberFormat('fa-IR').format(amount || 0) + ' ؋';
-          }
-          
-          function formatNumber(num) {
-            return new Intl.NumberFormat('fa-IR').format(num || 0);
-          }
-          
           window.onload = function() {
             window.print();
             setTimeout(() => {
@@ -319,13 +327,4 @@ export function printReport(data, columns, title) {
 
   printWindow.document.write(reportContent);
   printWindow.document.close();
-}
-
-// Helper functions
-function formatCurrency(amount) {
-  return new Intl.NumberFormat("fa-IR").format(amount || 0) + " ؋";
-}
-
-function formatNumber(num) {
-  return new Intl.NumberFormat("fa-IR").format(num || 0);
 }

@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import PageContainer from "@/components/pageContainer";
 import toast from "react-hot-toast";
 import { printCustomerBill, printKitchenBill } from "@/utils/printBill";
-import { formatJalaliDate, formatTime } from "@/utils/dateUtils";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function OrderDetailsPage() {
   const params = useParams();
@@ -20,6 +20,8 @@ export default function OrderDetailsPage() {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
+  const { t, tServer, locale, formatMoney, formatNumber, formatDate, formatDateTime } =
+    useLanguage();
 
   const fetchOrderDetails = async () => {
     try {
@@ -41,7 +43,7 @@ export default function OrderDetailsPage() {
       setTotal(totalAmount);
     } catch (err) {
       console.error("Error fetching order details:", err);
-      toast.error("خطا در دریافت جزئیات سفارش");
+      toast.error(t("orderDetails.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -64,10 +66,10 @@ export default function OrderDetailsPage() {
 
       const data = await res.json();
       fetchOrderDetails();
-      toast.success("سفارش لغو شد!");
+      toast.success(t("orderDetails.cancelled"));
     } catch (err) {
       console.error(err);
-      toast.error("خطا در لغو سفارش");
+      toast.error(t("orderDetails.cancelFailed"));
     } finally {
       setCancelLoading(false);
     }
@@ -76,12 +78,12 @@ export default function OrderDetailsPage() {
   const handlePaymentConfirm = () => {
     // Validate discount amount
     if (discount > total) {
-      toast.error("مقدار تخفیف نمی‌تواند بیشتر از مبلغ قابل پرداخت باشد");
+      toast.error(t("orderDetails.discountTooHigh"));
       return;
     }
 
     if (discount < 0) {
-      toast.error("مقدار تخفیف نمی‌تواند منفی باشد");
+      toast.error(t("orderDetails.discountNegative"));
       return;
     }
 
@@ -104,19 +106,19 @@ export default function OrderDetailsPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "پرداخت انجام نشد");
+      if (!res.ok) throw new Error(tServer(data.error, "orderDetails.paymentFailed"));
 
       fetchOrderDetails();
       setShowPaymentConfirm(false);
 
       if (data.message) {
-        toast.success("پرداخت تایید شد!");
+        toast.success(t("orderDetails.paymentConfirmed"));
       } else if (data.war) {
-        toast.error(data.war);
+        toast.error(tServer(data.war));
       }
     } catch (err) {
       console.error(err);
-      toast.error(err.message || "خطا در پرداخت");
+      toast.error(err.message || t("orderDetails.paymentError"));
     } finally {
       setPaymentLoading(false);
     }
@@ -124,7 +126,7 @@ export default function OrderDetailsPage() {
 
   const handlePrint = () => {
     if (!order || !items || !bill) return;
-    printCustomerBill(order, items, bill);
+    printCustomerBill(order, items, bill, locale);
   };
 
   const handleKitchenBill = async () => {
@@ -135,12 +137,12 @@ export default function OrderDetailsPage() {
       const pendingItems = items.filter((item) => item.status === "pending");
 
       if (pendingItems.length === 0) {
-        printKitchenBill(order, items);
+        printKitchenBill(order, items, locale);
         return;
       }
 
       // Print kitchen bill for pending items
-      printKitchenBill(order, pendingItems);
+      printKitchenBill(order, pendingItems, locale);
 
       // Update status of all pending items to in-progress - SINGLE API CALL
       const res = await fetch(`/api/orders/${orderId}`, {
@@ -155,19 +157,19 @@ export default function OrderDetailsPage() {
       const result = await res.json();
 
       // Show success message
-      toast.success(`وضعیت آیتم تغییر کرد`);
+      toast.success(t("orderDetails.statusChanged"));
 
       // Refresh order details to get updated statuses
       fetchOrderDetails();
     } catch (err) {
       console.error("Error updating item status:", err);
-      toast.error("خطا در بروزرسانی وضعیت آیتم‌ها");
+      toast.error(t("orderDetails.statusFailed"));
     }
   };
 
   if (loading) {
     return (
-      <PageContainer title={`جزئیات سفارش (${orderId})`}>
+      <PageContainer title={t("orderDetails.title", { id: orderId })}>
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[color:var(--color-primary)]"></div>
         </div>
@@ -177,45 +179,45 @@ export default function OrderDetailsPage() {
 
   if (!order) {
     return (
-      <PageContainer title={`جزئیات سفارش (${orderId})`}>
-        <p className="text-center text-red-500 mt-10">سفارش پیدا نشد!</p>
+      <PageContainer title={t("orderDetails.title", { id: orderId })}>
+        <p className="text-center text-red-500 mt-10">{t("orderDetails.notFound")}</p>
       </PageContainer>
     );
   }
 
   return (
-    <PageContainer title={`جزئیات سفارش (${orderId})`}>
+    <PageContainer title={t("orderDetails.title", { id: orderId })}>
       {/* Payment Confirmation Modal */}
       {showPaymentConfirm && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
+          <div className="bg-white rounded-xl max-w-md w-full p-4 sm:p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">
-              تایید پرداخت
+              {t("orderDetails.confirmPayment")}
             </h3>
 
             <div className="space-y-3 mb-6">
               <div className="flex justify-between">
-                <span className="text-gray-600">مبلغ کل:</span>
-                <span>{total.toLocaleString()} ؋</span>
+                <span className="text-gray-600">{t("orderDetails.totalAmount")}</span>
+                <span>{formatMoney(total)}</span>
               </div>
 
               <div className="flex justify-between">
-                <span className="text-gray-600">تخفیف:</span>
+                <span className="text-gray-600">{t("orderDetails.discount")}</span>
                 <span className="text-red-500">
-                  -{discount.toLocaleString()} ؋
+                  -{formatMoney(discount)}
                 </span>
               </div>
 
               <div className="flex justify-between text-lg font-bold border-t pt-2">
-                <span>مبلغ نهایی:</span>
+                <span>{t("orderDetails.finalAmount")}</span>
                 <span className="text-[color:var(--color-primary)]">
-                  {(total - discount).toLocaleString()} ؋
+                  {formatMoney(total - discount)}
                 </span>
               </div>
             </div>
 
             <p className="text-gray-600 text-sm mb-6">
-              آیا از تایید پرداخت این سفارش اطمینان دارید؟
+              {t("orderDetails.confirmQuestion")}
             </p>
 
             <div className="flex gap-3">
@@ -223,7 +225,7 @@ export default function OrderDetailsPage() {
                 onClick={() => setShowPaymentConfirm(false)}
                 className="flex-1 px-4 py-2 bg-gray-300 text-gray-800 rounded-lg font-medium hover:bg-gray-400 transition-colors"
               >
-                انصراف
+                {t("common.cancel")}
               </button>
               <button
                 onClick={handlePayment}
@@ -237,10 +239,10 @@ export default function OrderDetailsPage() {
                 {paymentLoading ? (
                   <span className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    در حال پرداخت...
+                    {t("orderDetails.paying")}
                   </span>
                 ) : (
-                  "تایید پرداخت"
+                  t("orderDetails.confirmPayment")
                 )}
               </button>
             </div>
@@ -248,29 +250,29 @@ export default function OrderDetailsPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 relative">
         {/* Right Column - Order Items */}
         <div className="space-y-4 md:p-3 lg:p-6">
           {items.length === 0 ? (
             <p className="text-gray-500 text-center py-8">
-              هیچ آیتمی ثبت نشده است.
+              {t("orderDetails.noItems")}
             </p>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
               <table className="w-full border-collapse mb-5">
                 <thead>
                   <tr className="border-b bg-gray-50">
-                    <th className="py-3 px-4 font-semibold text-gray-700 text-right">
-                      نام
+                    <th className="py-3 px-2 sm:px-4 font-semibold text-gray-700 text-start">
+                      {t("orderDetails.colName")}
                     </th>
-                    <th className="py-3 px-4 font-semibold text-gray-700 text-center">
-                      تعداد
+                    <th className="py-3 px-2 sm:px-4 font-semibold text-gray-700 text-center">
+                      {t("orderDetails.colQty")}
                     </th>
-                    <th className="py-3 px-4 font-semibold text-gray-700 text-left">
-                      قیمت
+                    <th className="py-3 px-2 sm:px-4 font-semibold text-gray-700 text-end">
+                      {t("orderDetails.colPrice")}
                     </th>
-                    <th className="py-3 px-4 font-semibold text-gray-700 text-left">
-                      مجموع
+                    <th className="py-3 px-2 sm:px-4 font-semibold text-gray-700 text-end">
+                      {t("common.total")}
                     </th>
                   </tr>
                 </thead>
@@ -280,19 +282,19 @@ export default function OrderDetailsPage() {
                       key={item.id}
                       className="border-b hover:bg-gray-50 transition-colors"
                     >
-                      <td className="py-3 px-4 font-medium text-gray-900">
+                      <td className="py-3 px-2 sm:px-4 font-medium text-gray-900">
                         {item.menu_item}
                       </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3 px-2 sm:px-4 text-center">
                         <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
-                          {item.qty}
+                          {formatNumber(item.qty)}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-gray-600">
-                        {item.price.toLocaleString()} ؋
+                      <td className="py-3 px-2 sm:px-4 text-gray-600 text-end whitespace-nowrap">
+                        {formatMoney(item.price)}
                       </td>
-                      <td className="py-3 px-4 font-semibold text-[color:var(--color-primary)]">
-                        {item.total_price.toLocaleString()} ؋
+                      <td className="py-3 px-2 sm:px-4 font-semibold text-[color:var(--color-primary)] text-end whitespace-nowrap">
+                        {formatMoney(item.total_price)}
                       </td>
                     </tr>
                   ))}
@@ -301,12 +303,12 @@ export default function OrderDetailsPage() {
             </div>
           )}
 
-          <div className="flex gap-3 mt-6">
+          <div className="flex flex-col sm:flex-row gap-3 mt-6">
             <button
               onClick={() => router.push("/main/orders")}
               className="flex-1 px-4 py-3 bg-gray-300 text-gray-800 rounded-xl font-medium hover:bg-gray-400 transition-colors"
             >
-              بازگشت به سفارش‌ها
+              {t("orderDetails.backToOrders")}
             </button>
 
             {order.status === "open" && (
@@ -314,61 +316,61 @@ export default function OrderDetailsPage() {
                 onClick={handleKitchenBill}
                 className="flex-1 px-4 py-3 bg-[color:var(--color-primary)] text-white rounded-xl font-medium hover:bg-[color:var(--color-primary-light)] transition-colors"
               >
-                چاپ فاکتور آشپزخانه
+                {t("orderDetails.printKitchen")}
               </button>
             )}
           </div>
         </div>
 
-        <div className="hidden lg:block absolute inset-y-0 left-1/2 w-px bg-gray-300" />
+        <div className="hidden lg:block absolute inset-y-0 start-1/2 w-px bg-gray-300" />
 
         {/* Left Column - Order Info & Actions */}
         <div className="space-y-4 md:p-3 lg:p-6">
           {order.status === "closed" && bill ? (
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-lg">
+            <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-lg">
               <h3 className="text-lg font-bold text-center text-gray-900 mb-4 border-b pb-2">
-                جزئیات فاکتور
+                {t("orderDetails.billDetails")}
               </h3>
 
               <div className="space-y-3 text-sm text-gray-700">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">شماره سفارش:</span>
+                  <span className="text-gray-600">{t("orderDetails.orderNumber")}</span>
                   <span className="font-medium">{order.order_id}</span>
                 </div>
 
                 <div className="flex justify-between">
-                  <span className="text-gray-600">شماره فاکتور:</span>
+                  <span className="text-gray-600">{t("orderDetails.billNumber")}</span>
                   <span className="font-medium">{bill.bill_id}</span>
                 </div>
 
                 <div className="flex justify-between">
-                  <span className="text-gray-600">میز:</span>
+                  <span className="text-gray-600">{t("orderDetails.table")}</span>
                   <span className="font-medium">{order.table_no}</span>
                 </div>
 
                 <hr className="my-2 border-dashed" />
 
                 <div className="flex justify-between">
-                  <span className="text-gray-600">مبلغ قابل پرداخت:</span>
-                  <span>{(bill.subtotal || 0).toLocaleString()} ؋</span>
+                  <span className="text-gray-600">{t("orderDetails.amountDueColon")}</span>
+                  <span>{formatMoney(bill.subtotal || 0)}</span>
                 </div>
 
                 <div className="flex justify-between">
-                  <span className="text-gray-600">تخفیف:</span>
+                  <span className="text-gray-600">{t("orderDetails.discount")}</span>
                   <span className="text-red-500">
-                    {(bill.discount || 0).toLocaleString()} ؋
+                    {formatMoney(bill.discount || 0)}
                   </span>
                 </div>
 
                 <div className="flex justify-between text-base font-bold text-gray-900 bg-gray-50 p-2 rounded-md">
-                  <span>مبلغ نهایی:</span>
-                  <span>{(bill.total_amount || 0).toLocaleString()} ؋</span>
+                  <span>{t("orderDetails.finalAmount")}</span>
+                  <span>{formatMoney(bill.total_amount || 0)}</span>
                 </div>
 
                 <div className="flex justify-between text-xs text-gray-500 pt-2 border-t mt-2">
-                  <span>تاریخ پرداخت:</span>
+                  <span>{t("orderDetails.paymentDate")}</span>
                   <span>
-                    {bill.created_at && formatJalaliDate(bill.created_at)}
+                    {bill.created_at && formatDate(bill.created_at)}
                   </span>
                 </div>
 
@@ -376,23 +378,23 @@ export default function OrderDetailsPage() {
                   onClick={handlePrint}
                   className="mt-6 w-full px-6 py-3 bg-[color:var(--color-primary)] text-white rounded-xl font-medium hover:bg-[color:var(--color-primary-light)] transition-colors"
                 >
-                  چاپ فاکتور
+                  {t("orderDetails.printBill")}
                 </button>
               </div>
             </div>
           ) : (
             <>
-              <div className="flex justify-between items-center pt-2">
-                <p className="font-bold text-gray-900">میز {order.table_no}</p>
-                <p className="font-bold text-gray-900">{order.created_at}</p>
+              <div className="flex flex-wrap justify-between items-center gap-2 pt-2">
+                <p className="font-bold text-gray-900">{t("common.tableNo", { no: order.table_no })}</p>
+                <p className="font-bold text-gray-900 text-sm sm:text-base">{formatDateTime(order.created_at)}</p>
               </div>
 
-              <div className="bg-[#E6F4F1] p-4 rounded-lg border-r-4 border-[color:var(--color-primary-light)]">
+              <div className="bg-[#E6F4F1] p-4 rounded-lg border-s-4 border-[color:var(--color-primary-light)]">
                 <p className="text-sm text-[color:var(--color-primary-light)] mb-1">
-                  مبلغ قابل پرداخت
+                  {t("orderDetails.amountDue")}
                 </p>
                 <p className="font-bold text-2xl text-[color:var(--color-primary-light)]">
-                  {(total || 0).toLocaleString()} ؋
+                  {formatMoney(total || 0)}
                 </p>
               </div>
 
@@ -404,12 +406,12 @@ export default function OrderDetailsPage() {
                       : "text-[color:var(--color-primary-light)]"
                   }`}
                 >
-                  وضعیت:{" "}
+                  {t("orderDetails.statusLabel")}{" "}
                   {order.status === "open"
-                    ? "فعال"
+                    ? t("orderDetails.statusActive")
                     : order.status === "cancelled"
-                    ? "لغو شده"
-                    : "پرداخت شده"}
+                    ? t("orderDetails.statusCancelled")
+                    : t("orderDetails.statusPaid")}
                 </p>
               </div>
 
@@ -417,11 +419,11 @@ export default function OrderDetailsPage() {
                 order.status === "open" && (
                   <div className="mt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      تخفیف (؋)
+                      {t("orderDetails.discountInput")}
                     </label>
                     <input
                       type="number"
-                      placeholder="مقدار تخفیف را وارد کنید"
+                      placeholder={t("orderDetails.discountPlaceholder")}
                       value={discount}
                       onChange={(e) => setDiscount(Number(e.target.value))}
                       min="0"
@@ -430,13 +432,13 @@ export default function OrderDetailsPage() {
                     />
                     {discount > total && (
                       <p className="text-red-500 text-xs mt-1">
-                        مقدار تخفیف نمی‌تواند بیشتر از مبلغ قابل پرداخت باشد
+                        {t("orderDetails.discountTooHigh")}
                       </p>
                     )}
                   </div>
                 )}
 
-              <div className="flex gap-3 mt-6">
+              <div className="flex flex-col sm:flex-row gap-3 mt-6">
                 {role === "waiter" && order.status === "open" && (
                   <button
                     onClick={handleCancel}
@@ -450,10 +452,10 @@ export default function OrderDetailsPage() {
                     {cancelLoading ? (
                       <span className="flex items-center justify-center gap-2">
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        در حال لغو...
+                        {t("orderDetails.cancelling")}
                       </span>
                     ) : (
-                      "لغو سفارش"
+                      t("orderDetails.cancelOrder")
                     )}
                   </button>
                 )}
@@ -473,10 +475,10 @@ export default function OrderDetailsPage() {
                         {cancelLoading ? (
                           <span className="flex items-center justify-center gap-2">
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            در حال لغو...
+                            {t("orderDetails.cancelling")}
                           </span>
                         ) : (
-                          "لغو سفارش"
+                          t("orderDetails.cancelOrder")
                         )}
                       </button>
 
@@ -492,7 +494,7 @@ export default function OrderDetailsPage() {
                               : "bg-[color:var(--color-primary)] text-white hover:opacity-90"
                           }`}
                         >
-                          تایید پرداخت
+                          {t("orderDetails.confirmPayment")}
                         </button>
                       )}
                     </>

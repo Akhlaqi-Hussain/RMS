@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FaSearch, FaClock, FaUser, FaReceipt, FaTable } from "react-icons/fa";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -10,6 +11,7 @@ export default function OrdersPage() {
   const [searchOrderId, setSearchOrderId] = useState("");
   const [lastSearch, setLastSearch] = useState("");
   const router = useRouter();
+  const { t, formatDateTime } = useLanguage();
 
   useEffect(() => {
     async function fetchOrders() {
@@ -37,49 +39,36 @@ export default function OrdersPage() {
     }
   };
 
-  const formatTime = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString("fa-IR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("fa-IR");
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[color:var(--color-primary)] mx-auto mb-4"></div>
-          <p className="text-gray-600">در حال بارگذاری سفارش‌ها...</p>
+          <p className="text-gray-600">{t("orders.loading")}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-6" dir="rtl">
+    <div className="min-h-screen p-1 sm:p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8 animate-fade-in">
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-4">
-            مدیریت سفارش‌ها
+            {t("orders.title")}
           </h1>
 
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="flex justify-center">
-            <div className="relative w-full max-w-md transition-all duration-300 hover:scale-105">
-              <FaSearch className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <div className="relative w-full max-w-md transition-all duration-300 sm:hover:scale-105">
+              <FaSearch className="absolute start-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 value={searchOrderId}
                 onChange={(e) => setSearchOrderId(e.target.value)}
-                placeholder="جستجو با شماره سفارش..."
-                className="w-full pr-12 pl-4 py-3 bg-white border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:border-[color:var(--color-primary)] focus:ring-2 focus:ring-[color:var(--color-primary)]/20 transition-all duration-200"
+                placeholder={t("orders.searchPlaceholder")}
+                className="w-full ps-12 pe-4 py-3 bg-white border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:border-[color:var(--color-primary)] focus:ring-2 focus:ring-[color:var(--color-primary)]/20 transition-all duration-200"
               />
             </div>
           </form>
@@ -90,7 +79,7 @@ export default function OrdersPage() {
           {orders.map((order, index) => (
             <div
               key={order.order_id}
-              className="transition-all duration-300 hover:-translate-y-1 hover:scale-105 active:scale-95"
+              className="transition-all duration-300 hover:-translate-y-1 sm:hover:scale-105 active:scale-95"
               style={{
                 animationDelay: `${index * 100}ms`,
                 animation: " 0.5s ease-out forwards",
@@ -100,30 +89,30 @@ export default function OrdersPage() {
                 href={`/main/orders/${order.order_id}`}
                 className="block bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden group"
               >
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   {/* Order Header */}
-                  <div className="flex justify-between items-start mb-4">
+                  <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
                     <div className="flex items-center gap-2">
                       <div className="bg-[color:var(--color-primary)] text-white p-2 rounded-lg">
                         <FaReceipt className="w-4 h-4" />
                       </div>
                       <div>
                         <h3 className="font-bold text-gray-900 text-lg">
-                          سفارش #{order.order_id}
+                          {t("common.orderNo", { id: order.order_id })}
                         </h3>
                         <div className="flex items-center gap-2 mt-1">
                           <FaTable className="w-3 h-3 text-gray-400" />
                           <span className="text-sm text-gray-600">
-                            میز {order.table_no}
+                            {t("common.tableNo", { no: order.table_no })}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="text-right">
+                    <div className="text-end">
                       <div className="flex items-center gap-1 text-gray-500 text-sm mb-1">
                         <FaClock className="w-3 h-3" />
-                        <span>{order.created_at}</span>
+                        <span>{formatDateTime(order.created_at)}</span>
                       </div>
                     </div>
                   </div>
@@ -134,7 +123,7 @@ export default function OrdersPage() {
                       <div className="flex items-center gap-2">
                         <FaUser className="w-4 h-4 text-gray-500" />
                         <span className="text-gray-600 font-medium">
-                          گارسون:
+                          {t("orders.waiter")}
                         </span>
                       </div>
                       <span className="font-semibold text-gray-900">
@@ -155,13 +144,13 @@ export default function OrdersPage() {
                       }`}
                     >
                       {order.status === "completed"
-                        ? "تکمیل شده"
+                        ? t("orders.statusCompleted")
                         : order.status === "open"
-                        ? "فعال"
-                        : "منسوخ"}
+                        ? t("orders.statusOpen")
+                        : t("orders.statusOther")}
                     </span>
                     <div className="text-[color:var(--color-primary)] text-sm font-medium group-hover:underline transition-all duration-200">
-                      مشاهده جزئیات →
+                      {t("orders.viewDetails")}
                     </div>
                   </div>
                 </div>
@@ -178,13 +167,13 @@ export default function OrdersPage() {
                 <span className="text-4xl">📝</span>
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                سفارشی وجود ندارد
+                {t("orders.emptyTitle")}
               </h3>
               <p className="text-gray-600 mb-6">
-                در حال حاضر هیچ سفارش فعالی در سیستم ثبت نشده است.
+                {t("orders.emptyText")}
               </p>
               <div className="text-sm text-gray-500 bg-gray-50 rounded-lg p-4 transition-all duration-300 hover:bg-gray-100">
-                برای ایجاد سفارش جدید به بخش سفارش‌گیری مراجعه کنید.
+                {t("orders.emptyHint")}
               </div>
             </div>
           </div>

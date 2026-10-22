@@ -6,6 +6,7 @@ import PageContainer from "@/components/pageContainer";
 import toast from "react-hot-toast";
 import { printKitchenBill } from "@/utils/printBill";
 import { FaShoppingCart, FaUtensils, FaPlus, FaReceipt } from "react-icons/fa";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function CheckoutPage() {
   const { cartItems, clearCart } = useCart();
@@ -18,6 +19,7 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showOrderId, setShowOrderId] = useState(false);
   const router = useRouter();
+  const { t, tServer, locale, formatMoney, formatNumber } = useLanguage();
 
   // Fetch tables
   useEffect(() => {
@@ -67,7 +69,7 @@ export default function CheckoutPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (cartItems.length === 0) {
-      toast.error("سبد خرید شما خالی است");
+      toast.error(t("checkout.emptyCart"));
       return;
     }
 
@@ -116,29 +118,29 @@ export default function CheckoutPage() {
 
       if (!res.ok) {
         console.error("Order error:", data.error);
-        toast.error(data.error || "ایجاد سفارش ناموفق بود!");
+        toast.error(tServer(data.error, "checkout.createFailed"));
         return;
       }
 
-      toast.success("سفارش با موفقیت ثبت شد!");
+      toast.success(t("checkout.created"));
 
       // Print kitchen bill for new orders
       if (orderType === "new" && data.order) {
-        printKitchenBill(data.order, cartItems);
+        printKitchenBill(data.order, cartItems, locale);
       }
 
       clearCart();
       router.push("/main/orders");
     } catch (err) {
       console.error("Error:", err);
-      toast.error("خطا در ارتباط با سرور");
+      toast.error(t("common.networkError"));
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <PageContainer title="تکمیل سفارش">
+    <PageContainer title={t("checkout.title")}>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 relative">
         {/* Left Column - Order Summary */}
         <div className="space-y-6">
@@ -149,10 +151,10 @@ export default function CheckoutPage() {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
-                  جزئیات سفارش
+                  {t("checkout.detailsTitle")}
                 </h2>
                 <p className="text-gray-500 text-sm">
-                  مرور آیتم‌های انتخاب شده
+                  {t("checkout.detailsSubtitle")}
                 </p>
               </div>
             </div>
@@ -163,30 +165,30 @@ export default function CheckoutPage() {
                   <FaShoppingCart className="w-8 h-8 text-gray-400" />
                 </div>
                 <p className="text-gray-500 font-medium">
-                  سبد خرید شما خالی است
+                  {t("checkout.emptyCart")}
                 </p>
                 <p className="text-gray-400 text-sm mt-1">
-                  برای ادامه، آیتم‌هایی به سبد اضافه کنید
+                  {t("checkout.emptyCartHint")}
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
                 {/* Order Items Table */}
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md">
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto transition-all duration-200 hover:shadow-md">
                   <table className="w-full border-collapse">
                     <thead>
                       <tr className="border-b bg-gray-50">
-                        <th className="py-3 px-4 font-semibold text-gray-700 text-right">
-                          نام آیتم
+                        <th className="py-3 px-2 sm:px-4 font-semibold text-gray-700 text-start">
+                          {t("checkout.colItem")}
                         </th>
-                        <th className="py-3 px-4 font-semibold text-gray-700 text-center">
-                          تعداد
+                        <th className="py-3 px-2 sm:px-4 font-semibold text-gray-700 text-center">
+                          {t("checkout.colQty")}
                         </th>
-                        <th className="py-3 px-4 font-semibold text-gray-700 text-left">
-                          قیمت واحد
+                        <th className="py-3 px-2 sm:px-4 font-semibold text-gray-700 text-end">
+                          {t("checkout.colUnitPrice")}
                         </th>
-                        <th className="py-3 px-4 font-semibold text-gray-700 text-left">
-                          مجموع
+                        <th className="py-3 px-2 sm:px-4 font-semibold text-gray-700 text-end">
+                          {t("common.total")}
                         </th>
                       </tr>
                     </thead>
@@ -200,19 +202,19 @@ export default function CheckoutPage() {
                             animation: " 0.5s ease-out forwards",
                           }}
                         >
-                          <td className="py-3 px-4 font-medium text-gray-900">
+                          <td className="py-3 px-2 sm:px-4 font-medium text-gray-900">
                             {item.name}
                           </td>
-                          <td className="py-3 px-4 text-center">
+                          <td className="py-3 px-2 sm:px-4 text-center">
                             <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
-                              {item.quantity}
+                              {formatNumber(item.quantity)}
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-gray-600">
-                            {item.price.toLocaleString()} ؋
+                          <td className="py-3 px-2 sm:px-4 text-gray-600 text-end whitespace-nowrap">
+                            {formatMoney(item.price)}
                           </td>
-                          <td className="py-3 px-4 font-semibold text-[color:var(--color-primary)]">
-                            {(item.price * item.quantity).toLocaleString()} ؋
+                          <td className="py-3 px-2 sm:px-4 font-semibold text-[color:var(--color-primary)] text-end whitespace-nowrap">
+                            {formatMoney(item.price * item.quantity)}
                           </td>
                         </tr>
                       ))}
@@ -221,12 +223,12 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* Total Price Section */}
-                <div className="bg-[#E6F4F1] p-4 rounded-lg border-r-4 border-[color:var(--color-primary-light)] transition-all duration-200 hover:scale-[1.02]">
+                <div className="bg-[#E6F4F1] p-4 rounded-lg border-s-4 border-[color:var(--color-primary-light)] transition-all duration-200 hover:scale-[1.02]">
                   <p className="text-sm text-[color:var(--color-primary-light)] mb-1">
-                    مبلغ قابل پرداخت
+                    {t("checkout.amountDue")}
                   </p>
                   <p className="font-bold text-2xl text-[color:var(--color-primary-light)]">
-                    {totalPrice.toLocaleString()} ؋
+                    {formatMoney(totalPrice)}
                   </p>
                 </div>
 
@@ -236,7 +238,7 @@ export default function CheckoutPage() {
                     onClick={() => router.push("/main/menu")}
                     className="flex-1 px-4 py-3 bg-gray-300 text-gray-800 rounded-xl font-medium hover:bg-gray-400 transition-all duration-200 active:scale-95"
                   >
-                    بازگشت به منو
+                    {t("checkout.backToMenu")}
                   </button>
                 </div>
               </div>
@@ -245,25 +247,25 @@ export default function CheckoutPage() {
         </div>
 
         {/* Vertical Divider */}
-        <div className="hidden lg:block absolute inset-y-0 left-1/2 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent" />
+        <div className="hidden lg:block absolute inset-y-0 start-1/2 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent" />
 
         {/* Right Column - Order Information */}
         <div className="space-y-6">
           <div className="md:p-6">
             <div className="flex items-center gap-3 mb-6">
-              <h2 className="text-xl font-bold text-gray-900">اطلاعات سفارش</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t("checkout.infoTitle")}</h2>
             </div>
 
             {/* Order Type Selector */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                نوع سفارش
+                {t("checkout.orderType")}
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setOrderType("new")}
-                  className={`p-4 rounded-xl border-2 transition-all duration-200 active:scale-95 ${
+                  className={`p-3 sm:p-4 rounded-xl border-2 transition-all duration-200 active:scale-95 ${
                     orderType === "new"
                       ? "border-[color:var(--color-primary)] bg-blue-50 text-[color:var(--color-primary)] font-semibold"
                       : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:scale-105"
@@ -271,14 +273,14 @@ export default function CheckoutPage() {
                 >
                   <div className="text-center">
                     <div className="text-lg mb-1">🆕</div>
-                    <div className="text-sm">سفارش جدید</div>
+                    <div className="text-sm">{t("checkout.newOrder")}</div>
                   </div>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setOrderType("existing")}
-                  className={`p-4 rounded-xl border-2 transition-all duration-200 active:scale-95 ${
+                  className={`p-3 sm:p-4 rounded-xl border-2 transition-all duration-200 active:scale-95 ${
                     orderType === "existing"
                       ? "border-green-500 bg-green-50 text-green-600 font-semibold"
                       : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:scale-105"
@@ -288,7 +290,7 @@ export default function CheckoutPage() {
                     <div className="text-lg mb-1">
                       <FaPlus className="w-4 h-4 mx-auto" />
                     </div>
-                    <div className="text-sm">افزودن به سفارش موجود</div>
+                    <div className="text-sm">{t("checkout.addToExisting")}</div>
                   </div>
                 </button>
               </div>
@@ -298,7 +300,7 @@ export default function CheckoutPage() {
               {/* Table Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  شماره میز
+                  {t("checkout.tableNumber")}
                 </label>
                 <select
                   value={tableId}
@@ -306,15 +308,15 @@ export default function CheckoutPage() {
                   className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-[color:var(--color-primary)] focus:ring-2 focus:ring-[color:var(--color-primary)]/20 transition-all duration-200"
                   required
                 >
-                  <option value="">انتخاب میز</option>
+                  <option value="">{t("checkout.chooseTable")}</option>
                   {tables.length > 0 ? (
                     tables.map((table) => (
                       <option key={table.table_id} value={table.table_id}>
-                        میز {table.table_no}
+                        {t("common.tableNo", { no: table.table_no })}
                       </option>
                     ))
                   ) : (
-                    <option disabled>در حال بارگذاری...</option>
+                    <option disabled>{t("common.loading")}</option>
                   )}
                 </select>
               </div>
@@ -326,7 +328,7 @@ export default function CheckoutPage() {
                 }`}
               >
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  شناسه سفارش
+                  {t("checkout.orderId")}
                 </label>
                 <select
                   value={orderId}
@@ -334,18 +336,18 @@ export default function CheckoutPage() {
                   className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-200"
                   required={orderType === "existing"}
                 >
-                  <option value="">انتخاب سفارش</option>
+                  <option value="">{t("checkout.chooseOrder")}</option>
                   {orders.length > 0 ? (
                     orders.map((order) => (
                       <option key={order.order_id} value={order.order_id}>
-                        سفارش {order.order_id}
+                        {t("common.orderNo", { id: order.order_id })}
                       </option>
                     ))
                   ) : (
                     <option disabled>
                       {tableId
-                        ? "سفارشی یافت نشد"
-                        : "لطفاً ابتدا میز را انتخاب کنید"}
+                        ? t("checkout.noOrders")
+                        : t("checkout.chooseTableFirst")}
                     </option>
                   )}
                 </select>
@@ -354,14 +356,14 @@ export default function CheckoutPage() {
               {/* Notes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  یادداشت ویژه
+                  {t("checkout.notes")}
                 </label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-[color:var(--color-primary)] focus:ring-2 focus:ring-[color:var(--color-primary)]/20 transition-all duration-200 resize-none"
                   rows={3}
-                  placeholder="مثلاً: بدون پیاز، تند باشد، همراه با سس اضافه..."
+                  placeholder={t("checkout.notesPlaceholder")}
                 />
               </div>
 
@@ -378,12 +380,12 @@ export default function CheckoutPage() {
                 {submitting ? (
                   <span className="flex items-center justify-center gap-2 opacity-70">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    در حال ثبت سفارش...
+                    {t("checkout.submitting")}
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-2">
                     <FaUtensils className="w-4 h-4" />
-                    تأیید و ثبت سفارش
+                    {t("checkout.submit")}
                   </span>
                 )}
               </button>

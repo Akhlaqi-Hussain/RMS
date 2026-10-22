@@ -1,17 +1,19 @@
 "use client";
 
 import React from "react";
+import { useLanguage } from "@/context/LanguageContext";
 
 const DataTable = ({
   data,
   columns,
   title = "",
-  emptyMessage = "داده‌ای برای نمایش وجود ندارد",
+  emptyMessage,
   loading = false,
   className = "",
   onPrint,
   showTotalsRow = true, // show/hide totals
 }) => {
+  const { t, formatNumber } = useLanguage();
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
@@ -51,26 +53,26 @@ const DataTable = ({
       className={`bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden ${className} mt-8`}
     >
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex flex-wrap gap-2 justify-between items-center">
         <h3 className="text-xl font-bold">{title}</h3>
         {onPrint && (
           <button
             onClick={onPrint}
             className="bg-[color:var(--color-primary)] text-white px-4 py-2 rounded-lg font-medium hover:bg-[color:var(--color-primary-light)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
           >
-            چاپ گزارش
+            {t("reports.print")}
           </button>
         )}
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200" dir="rtl">
+        <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gradient-to-r from-gray-50 to-gray-50/80 border-b border-gray-200">
             <tr>
               {columns.map((column, index) => (
                 <th
                   key={column.key || index}
-                  className="px-6 py-4 text-right text-sm font-semibold text-gray-700"
+                  className="px-3 sm:px-6 py-4 text-start text-sm font-semibold text-gray-700 whitespace-nowrap"
                 >
                   {column.header}
                 </th>
@@ -87,7 +89,7 @@ const DataTable = ({
                 {columns.map((column, colIndex) => (
                   <td
                     key={colIndex}
-                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                    className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900"
                   >
                     {column.render
                       ? column.render(row[column.key], row)
@@ -102,14 +104,14 @@ const DataTable = ({
                 {columns.map((column, colIndex) => (
                   <td
                     key={colIndex}
-                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                    className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900"
                   >
                     {colIndex === 0
-                      ? "مجموع"
+                      ? t("common.total")
                       : summableKeys.includes(column.key)
                       ? column.render
                         ? column.render(totals[column.key])
-                        : totals[column.key].toLocaleString()
+                        : formatNumber(totals[column.key])
                       : ""}
                   </td>
                 ))}

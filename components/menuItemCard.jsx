@@ -3,17 +3,19 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { FaShoppingCart } from "react-icons/fa";
 import { useCart } from "@/context/CartContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 const MenuItemCard = ({ item }) => {
   const [imageError, setImageError] = useState(false);
   const { addToCart } = useCart();
+  const { t, formatMoney } = useLanguage();
 
   const handleImageError = () => {
     setImageError(true);
   };
 
   return (
-    <div className="group bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl w-50 flex flex-col">
+    <div className="group bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl w-full flex flex-col">
       {/* Image Container */}
       <div className="relative h-28 w-full overflow-hidden">
         <Image
@@ -27,18 +29,18 @@ const MenuItemCard = ({ item }) => {
 
         {/* 💰 Price Tag */}
         <span
-          className="absolute top-2 right-2 px-3 py-1 text-xs font-bold rounded-full shadow-md"
+          className="absolute top-2 start-2 px-2 sm:px-3 py-1 text-xs font-bold rounded-full shadow-md"
           style={{
             backgroundColor: "var(--color-primary)",
             color: "var(--color-text-on-primary)",
           }}
         >
-          {Number(item.price).toLocaleString()} ؋
+          {formatMoney(item.price)}
         </span>
       </div>
 
       {/* Content */}
-      <div className="p-5 flex flex-col flex-grow">
+      <div className="p-3 sm:p-5 flex flex-col flex-grow">
         <h3 className="text-md font-bold text-gray-900 line-clamp-1 mb-2">
           {item.name}
         </h3>
@@ -53,7 +55,7 @@ const MenuItemCard = ({ item }) => {
           }}
         >
           <FaShoppingCart className="w-5 h-5" />
-          افزودن
+          {t("menu.addToCart")}
         </button>
       </div>
     </div>

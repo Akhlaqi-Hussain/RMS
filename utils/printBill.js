@@ -1,9 +1,43 @@
 import { restaurantInfo } from "./restaurantInfo";
-import { formatJalaliDate, formatTime } from "./dateUtils";
+import { translate } from "@/lib/i18n/translate";
+import { getDir, getLangTag, normalizeLocale } from "@/lib/i18n/config";
+import {
+  formatDate,
+  formatTime,
+  formatNumber as fmtNumber,
+  formatMoney,
+} from "@/lib/i18n/format";
+
+// I18N-01: printouts follow the user's language and text direction.
+function printSettings(locale) {
+  const loc = normalizeLocale(locale);
+  const rtl = getDir(loc) === "rtl";
+  return {
+    loc,
+    tr: (key, vars) => translate(loc, key, vars),
+    dir: getDir(loc),
+    lang: getLangTag(loc),
+    start: rtl ? "right" : "left",
+    end: rtl ? "left" : "right",
+    font: rtl
+      ? "Tahoma, 'Segoe UI', 'Noto Naskh Arabic', Arial, sans-serif"
+      : "'SF Mono', 'Courier New', monospace",
+    num: (n) => fmtNumber(n, loc),
+    money: (n) => formatMoney(n, loc),
+    date: (d) => formatDate(d, loc),
+    time: (d) => formatTime(d, loc),
+    restaurant: {
+      name: translate(loc, "restaurant.name"),
+      address: translate(loc, "restaurant.address"),
+      phone: translate(loc, "restaurant.phone"),
+    },
+  };
+}
 
 // Print Kitchen Bill
-export function printKitchenBill(order, items) {
+export function printKitchenBill(order, items, locale) {
   const { order_id, table_no, created_at, note } = order;
+  const p = printSettings(locale);
 
   const baseHeight = 350;
   const itemHeight = 40;
@@ -17,15 +51,15 @@ export function printKitchenBill(order, items) {
 
   const kitchenContent = `
     <!DOCTYPE html>
-    <html>
+    <html lang="${p.lang}" dir="${p.dir}">
       <head>
-        <title>نسخه آشپزخانه</title>
+        <title>${p.tr("print.kitchenTitle")}</title>
         <meta charset="UTF-8">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
-            font-family: 'SF Mono', 'Courier New', monospace; 
-            direction: rtl; 
+            font-family: ${p.font}; 
+            direction: ${p.dir}; 
             width: 300px; 
             margin: 0 auto; 
             padding: 20px; 
@@ -59,7 +93,7 @@ export function printKitchenBill(order, items) {
             text-align: center; 
             font-size: 15px; 
           }
-          .items-table th:first-child { text-align: right; }
+          .items-table th:first-child { text-align: ${p.start}; }
           .items-table td { 
             padding: 10px 5px; 
             border-bottom: 1px solid #eee; 
@@ -86,18 +120,18 @@ export function printKitchenBill(order, items) {
       <body>
         <div class="receipt">
           <div class="header">
-            <div class="restaurant-name">${restaurantInfo.name}</div>
-            <p>شماره: <strong>${restaurantInfo.prefix}-${order_id}</strong></p>
-            <p>میز: <strong>${table_no}</strong></p>
-            <p>${formatJalaliDate(created_at)}</p>
-            <p>${formatTime(created_at)}</p>
+            <div class="restaurant-name">${p.restaurant.name}</div>
+            <p>${p.tr("print.number")} <strong>${restaurantInfo.prefix}-${order_id}</strong></p>
+            <p>${p.tr("print.table")} <strong>${table_no}</strong></p>
+            <p>${p.date(created_at)}</p>
+            <p>${p.time(created_at)}</p>
           </div>
           
           <table class="items-table">
             <thead>
               <tr>
-                <th>نام</th>
-                <th>تعداد</th>
+                <th>${p.tr("print.name")}</th>
+                <th>${p.tr("print.qty")}</th>
               </tr>
             </thead>
             <tbody>
@@ -108,7 +142,7 @@ export function printKitchenBill(order, items) {
                   <td class="item-name">${
                     item.menu_item || item.menu_item_id
                   }</td>
-                  <td class="item-qty">${formatNumber(item.qty)}</td>
+                  <td class="item-qty">${p.num(item.qty)}</td>
                 </tr>
               `
                 )
@@ -118,22 +152,19 @@ export function printKitchenBill(order, items) {
 
           ${
             note
-              ? `<div style="margin-bottom: 5px;">توضیحات سفارش: ${note}</div>`
+              ? `<div style="margin-bottom: 5px;">${p.tr("print.orderNote")} ${note}</div>`
               : ""
           }
           
           <div class="footer">
             <div class="contact-info">
-              <div>${restaurantInfo.phone}</div>
-              <div>${restaurantInfo.address}</div>
+              <div dir="ltr">${p.restaurant.phone}</div>
+              <div>${p.restaurant.address}</div>
             </div>
           </div>
         </div>
 
         <script>
-          function formatNumber(num) {
-            return new Intl.NumberFormat('fa-IR').format(num);
-          }
           window.onload = function() {
             window.print();
             setTimeout(() => window.close(), 300);
@@ -148,9 +179,10 @@ export function printKitchenBill(order, items) {
 }
 
 // Print Customer Bill
-export function printCustomerBill(order, items, bill) {
+export function printCustomerBill(order, items, bill, locale) {
   const { order_id, table_no } = order;
   const { subtotal, discount, total_amount, created_at } = bill;
+  const p = printSettings(locale);
 
   const baseHeight = 400;
   const itemHeight = 35;
@@ -166,15 +198,15 @@ export function printCustomerBill(order, items, bill) {
 
   const billContent = `
     <!DOCTYPE html>
-    <html>
+    <html lang="${p.lang}" dir="${p.dir}">
       <head>
-        <title>فاکتور سفارش</title>
+        <title>${p.tr("print.billTitle")}</title>
         <meta charset="UTF-8">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
-            font-family: 'SF Mono', 'Courier New', monospace; 
-            direction: rtl; 
+            font-family: ${p.font}; 
+            direction: ${p.dir}; 
             width: 300px; 
             margin: 0 auto; 
             padding: 20px; 
@@ -207,8 +239,8 @@ export function printCustomerBill(order, items, bill) {
             font-weight: 700; 
             text-align: center; 
           }
-          .items-table th:first-child { text-align: right; }
-          .items-table th:last-child { text-align: left; }
+          .items-table th:first-child { text-align: ${p.start}; }
+          .items-table th:last-child { text-align: ${p.end}; }
           .items-table td { 
             padding: 8px 5px; 
             border-bottom: 1px solid #eee; 
@@ -265,18 +297,18 @@ export function printCustomerBill(order, items, bill) {
       <body>
         <div class="receipt">
           <div class="header">
-            <div class="restaurant-name">${restaurantInfo.name}</div>
-            <p>سفارش: <strong>${restaurantInfo.prefix}-${order_id}</strong></p>
-            <p>${formatJalaliDate(created_at)}</p>
-            <p>${formatTime(created_at)}</p>
+            <div class="restaurant-name">${p.restaurant.name}</div>
+            <p>${p.tr("print.order")} <strong>${restaurantInfo.prefix}-${order_id}</strong></p>
+            <p>${p.date(created_at)}</p>
+            <p>${p.time(created_at)}</p>
           </div>
           
           <table class="items-table">
             <thead>
               <tr>
-                <th>نام</th>
-                <th>تعداد</th>
-                <th>قیمت</th>
+                <th>${p.tr("print.name")}</th>
+                <th>${p.tr("print.qty")}</th>
+                <th>${p.tr("print.price")}</th>
               </tr>
             </thead>
             <tbody>
@@ -284,13 +316,11 @@ export function printCustomerBill(order, items, bill) {
                 .map(
                   (item) => `
                 <tr>
-                  <td style="text-align: right;">${
+                  <td style="text-align: ${p.start};">${
                     item.menu_item || item.menu_item_id
                   }</td>
-                  <td style="text-align: center;">${formatNumber(item.qty)}</td>
-                  <td style="text-align: center;">${formatNumber(
-                    item.price
-                  )}</td>
+                  <td style="text-align: center;">${p.num(item.qty)}</td>
+                  <td style="text-align: center;">${p.num(item.price)}</td>
                 </tr>
               `
                 )
@@ -300,41 +330,35 @@ export function printCustomerBill(order, items, bill) {
           
           <div class="totals">
             <div class="total-row">
-              <span>جمع کل:</span>
-              <span>${formatCurrency(subtotal)}</span>
+              <span>${p.tr("print.subtotal")}</span>
+              <span>${p.money(subtotal)}</span>
             </div>
             ${
               discount > 0
                 ? `
               <div class="total-row discount-row">
-                <span>تخفیف:</span>
-                <span>${formatCurrency(discount)}</span>
+                <span>${p.tr("print.discount")}</span>
+                <span>${p.money(discount)}</span>
               </div>
             `
                 : ""
             }
             <div class="total-row final">
-              <span>مبلغ نهایی:</span>
-              <span>${formatCurrency(total_amount)}</span>
+              <span>${p.tr("print.finalAmount")}</span>
+              <span>${p.money(total_amount)}</span>
             </div>
           </div>
           
           <div class="footer">
-            <div class="thank-you">با تشکر از انتخاب شما</div>
+            <div class="thank-you">${p.tr("print.thankYou")}</div>
             <div class="contact-info">
-              <div>${restaurantInfo.phone}</div>
-              <div>${restaurantInfo.address}</div>
+              <div dir="ltr">${p.restaurant.phone}</div>
+              <div>${p.restaurant.address}</div>
             </div>
           </div>
         </div>
 
         <script>
-          function formatCurrency(amount) {
-            return new Intl.NumberFormat('fa-IR').format(amount) + ' ؋';
-          }
-          function formatNumber(num) {
-            return new Intl.NumberFormat('fa-IR').format(num);
-          }
           window.onload = function() {
             window.print();
             setTimeout(() => window.close(), 500);
@@ -346,13 +370,4 @@ export function printCustomerBill(order, items, bill) {
 
   printWindow.document.write(billContent);
   printWindow.document.close();
-}
-
-// Helper functions
-function formatCurrency(amount) {
-  return new Intl.NumberFormat("fa-IR").format(amount) + " ؋";
-}
-
-function formatNumber(num) {
-  return new Intl.NumberFormat("fa-IR").format(num);
 }

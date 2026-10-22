@@ -6,6 +6,8 @@ import {
   validateField,
   validateForm,
 } from "@/schemas/loginSchema";
+import { useLanguage } from "@/context/LanguageContext";
+import LanguageSwitcher from "@/components/languageSwitcher";
 
 const Login = ({ onSubmit }) => {
   const [formData, setFormData] = useState({ username: "", password: "" });
@@ -13,6 +15,7 @@ const Login = ({ onSubmit }) => {
   const [touched, setTouched] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { t } = useLanguage();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -54,19 +57,20 @@ const Login = ({ onSubmit }) => {
           "linear-gradient(to bottom right, var(--color-surface), #f9f9f9)",
       }}
     >
-      <div className="flex-1 flex items-center justify-center p-6 border border">
+      <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6">
+        <div className="w-full max-w-md flex justify-end mb-3">
+          <LanguageSwitcher />
+        </div>
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
-          <div className="p-8">
+          <div className="p-6 sm:p-8">
             <div className="text-center mb-8">
               <h2
                 className="text-3xl font-bold mb-2"
                 style={{ color: "var(--color-text-primary)" }}
               >
-                خوش آمدید
+                {t("login.welcome")}
               </h2>
-              <p className="text-gray-600">
-                لطفا برای ادامه وارد حساب کاربری خود شوید
-              </p>
+              <p className="text-gray-600">{t("login.subtitle")}</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -74,10 +78,10 @@ const Login = ({ onSubmit }) => {
               <div>
                 <label
                   htmlFor="username"
-                  className="block text-sm font-medium mb-2 mr-1"
+                  className="block text-sm font-medium mb-2 ms-1"
                   style={{ color: "var(--color-text-primary)" }}
                 >
-                  نام کاربری
+                  {t("login.username")}
                 </label>
                 <input
                   type="text"
@@ -86,16 +90,16 @@ const Login = ({ onSubmit }) => {
                   value={formData.username}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  className={`w-full p-3 border rounded-xl shadow-sm text-right transition-all duration-200 focus:ring-2 focus:border-transparent ${
+                  className={`w-full p-3 border rounded-xl shadow-sm text-start transition-all duration-200 focus:ring-2 focus:border-transparent ${
                     errors.username && touched.username
                       ? "border-red-500"
                       : "border-gray-300 focus:ring-[var(--color-primary)]"
                   }`}
-                  placeholder="نام کاربری خود را وارد کنید"
+                  placeholder={t("login.usernamePlaceholder")}
                 />
                 {errors.username && touched.username && (
                   <p className="mt-2 text-sm text-red-600 flex items-center">
-                    {errors.username}
+                    {t(errors.username)}
                   </p>
                 )}
               </div>
@@ -104,10 +108,10 @@ const Login = ({ onSubmit }) => {
               <div>
                 <label
                   htmlFor="password"
-                  className="block text-sm font-medium mb-2 mr-1"
+                  className="block text-sm font-medium mb-2 ms-1"
                   style={{ color: "var(--color-text-primary)" }}
                 >
-                  رمز عبور
+                  {t("login.password")}
                 </label>
                 <div className="relative">
                   <input
@@ -117,17 +121,17 @@ const Login = ({ onSubmit }) => {
                     value={formData.password}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className={`w-full p-3 border rounded-xl shadow-sm text-right pr-12 transition-all duration-200 focus:ring-2 focus:border-transparent ${
+                    className={`w-full p-3 border rounded-xl shadow-sm text-start pe-12 transition-all duration-200 focus:ring-2 focus:border-transparent ${
                       errors.password && touched.password
                         ? "border-red-500"
                         : "border-gray-300 focus:ring-[var(--color-primary)]"
                     }`}
-                    placeholder="رمز عبور خود را وارد کنید"
+                    placeholder={t("login.passwordPlaceholder")}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 left-3 flex items-center text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                    className="absolute inset-y-0 end-3 flex items-center text-gray-500 hover:text-gray-700 transition-colors duration-200"
                   >
                     {showPassword ? (
                       <FaEyeSlash size={16} />
@@ -138,7 +142,7 @@ const Login = ({ onSubmit }) => {
                 </div>
                 {errors.password && touched.password && (
                   <p className="mt-2 text-sm text-red-600 flex items-center">
-                    {errors.password}
+                    {t(errors.password)}
                   </p>
                 )}
               </div>
@@ -154,10 +158,11 @@ const Login = ({ onSubmit }) => {
                   }}
                 >
                   {isSubmitting ? (
-                    "در حال ورود..."
+                    t("login.submitting")
                   ) : (
                     <>
-                      ورود <FaArrowRight className="mr-2" size={14} />
+                      {t("login.submit")}{" "}
+                      <FaArrowRight className="ms-2 rtl:rotate-180" size={14} />
                     </>
                   )}
                 </button>

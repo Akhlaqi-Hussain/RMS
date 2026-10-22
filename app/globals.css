@@ -33,15 +33,46 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* UI-02: the RMS screens have a light design only. On a computer or phone set
+   to dark mode, the old dark-mode colours turned plain text almost white on the
+   white cards (e.g. "Menu management"). Keep the light colours everywhere. */
+:root {
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #171717;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* I18N-01: Dari and Pashto need fonts that contain all Pashto letters
+   (ټ ډ ړ ږ ښ ګ ڼ ې ۍ). These are installed on Windows, Android and macOS. */
+html[lang="fa-AF"] body,
+html[lang="ps-AF"] body {
+  font-family: Tahoma, "Segoe UI", "Noto Naskh Arabic", "Noto Sans Arabic", Arial, sans-serif;
+  line-height: 1.7;
+}
+
+/* UI-01: keep the page content and the top bar beside the desktop sidebar.
+   Physical left/right + [dir] are used on purpose: the md:ms-* classes were
+   dropped from the CSS in "npm run dev", so the content slid under the sidebar.
+   --rms-sidebar is set in components/sidebarLayout.jsx (14rem open, 4rem closed). */
+@media (min-width: 48rem) {
+  .rms-main {
+    margin-left: var(--rms-sidebar, 4rem);
+  }
+  .rms-header {
+    padding-left: calc(var(--rms-sidebar, 4rem) + 1rem);
+  }
+  [dir="rtl"] .rms-main {
+    margin-left: 0;
+    margin-right: var(--rms-sidebar, 4rem);
+  }
+  [dir="rtl"] .rms-header {
+    padding-left: 1rem;
+    padding-right: calc(var(--rms-sidebar, 4rem) + 1rem);
+  }
 }
