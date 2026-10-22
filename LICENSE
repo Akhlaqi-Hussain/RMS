@@ -1,0 +1,19 @@
+RMS — Restaurant Management System
+Copyright (c) 2025-2026 Akhlaqi-Hussain and the RMS contributors.
+All rights reserved.
+
+This software and its source code are proprietary and confidential.
+No part of it may be copied, modified, distributed, sublicensed, sold, or used
+to create derivative works, in whole or in part, without the prior written
+permission of the copyright holders.
+
+The software is provided "as is", without warranty of any kind, express or
+implied, including but not limited to the warranties of merchantability,
+fitness for a particular purpose and non-infringement. In no event shall the
+copyright holders be liable for any claim, damages or other liability arising
+from the use of the software.
+
+Third-party components keep their own licences, including:
+- Fonts in app/fonts and public/fonts (Geist, Vazirmatn, Noto Sans Arabic):
+  SIL Open Font License 1.1 — see the licence text next to each font file.
+- npm packages listed in package.json: see each package's own licence.

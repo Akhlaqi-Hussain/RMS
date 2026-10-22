@@ -6,12 +6,13 @@
 
 Trilingual (**English · دری · پښتو**) · fully **offline** · role-based access
 
-![Next.js](https://img.shields.io/badge/Next.js-15.5-000000?logo=nextdotjs&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8.4-4479A1?logo=mysql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A520-339933?logo=nodedotjs&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A520.9-339933?logo=nodedotjs&logoColor=white)
+![License](https://img.shields.io/badge/license-proprietary-lightgrey)
 
 </div>
 
@@ -34,10 +35,12 @@ Trilingual (**English · دری · پښتو**) · fully **offline** · role-base
 - [Languages](#languages)
 - [Offline use and fonts](#offline-use-and-fonts)
 - [Database](#database)
+- [Backup and restore](#backup-and-restore)
 - [Testing](#testing)
 - [Security](#security)
 - [Project structure](#project-structure)
 - [Before going to production](#before-going-to-production)
+- [License](#license)
 - [Credits](#credits)
 
 ## Features
@@ -47,6 +50,8 @@ Trilingual (**English · دری · پښتو**) · fully **offline** · role-base
 | 🧾 **Ordering** | Browse the menu by category, add to a cart, place an order for a table or add items to an open order |
 | 👨‍🍳 **Kitchen** | A kitchen ticket prints automatically for new orders; items move from *pending* to *in progress* |
 | 💵 **Payment** | Discounts, confirmation, printed customer bill; totals are always recalculated by the database |
+| 💾 **Backups** | Manage → Backups: back up now, automatic schedule (daily / twice a day / weekly), download; verified backups of the database and pictures; safe restore |
+| 🔒 **Safe saving** | An order and its items are saved together in one database transaction — never half-saved |
 | 📊 **Dashboard** | Total and today's revenue, discounts, orders, recent orders and the most popular items |
 | 📈 **Reports** | Sales, financial, orders and products reports for any date range, printable |
 | 🛠️ **Management** | Menu items with pictures, categories, staff accounts and roles, tables (active/inactive) |
@@ -83,14 +88,14 @@ a role takes effect immediately.
 
 | Layer | Technology |
 |---|---|
-| Front end | Next.js 15 (App Router), React 19, Tailwind CSS 4, Framer Motion, React Hot Toast |
+| Front end | Next.js 16 (App Router), React 19, Tailwind CSS 4, Framer Motion, React Hot Toast |
 | Back end | Next.js route handlers (`app/api`), JWT session cookie, bcrypt password hashes |
 | Database | MySQL 8.4 with stored procedures, run in Docker |
 | i18n | Own lightweight layer: JSON dictionaries, `Intl` number formats, `jalaali-js` for the solar calendar |
 
 ```mermaid
 flowchart LR
-    B["Browser<br/>(staff device)"] -->|pages and API calls| M["middleware.js<br/>login and role check"]
+    B["Browser<br/>(staff device)"] -->|pages and API calls| M["proxy.js<br/>login and role check"]
     M --> P["Pages<br/>app/main/*"]
     M --> A["API routes<br/>app/api/*"]
     A -->|mysql2 pool| D[("MySQL 8.4<br/>stored procedures")]
@@ -99,7 +104,7 @@ flowchart LR
 
 ## Getting started
 
-**Requirements:** Node.js 20+ LTS, Git, and Docker Desktop (running). Internet is needed only once,
+**Requirements:** Node.js 20.9+ LTS, Git, and Docker Desktop (running). Internet is needed only once,
 to download the code and the npm packages.
 
 ```bash
@@ -143,6 +148,8 @@ npm run dev
 | Start the database | `docker compose --env-file .env.local up -d` |
 | Start the app (development) | `npm run dev` |
 | Lint | `npm run lint` |
+| API regression test (app running on `rms_test`) | `npm run test:api` |
+| Back up now / restore the newest backup | `npm run backup` / `npm run restore -- --latest` |
 | Production build and start | `npm run build` then `npm start` |
 | Stop the database (data is kept) | `docker compose --env-file .env.local stop` |
 
@@ -190,14 +197,95 @@ MySQL 8.4 runs in Docker on `127.0.0.1:3307`, reachable only from the same compu
 
 Prices and bill totals are always taken from the database, never from the browser.
 
+## Backup and restore
+
+Every backup is **one file** that contains the whole database (tables, data, stored procedures),
+all menu pictures and a manifest with a checksum for every file and the row count of every table.
+Each backup is read back and checked right after it is made.
+
+```text
+rms-backups/
+  rms-backup_rms_dev_2026-11-01_233000_monthly.tar.gz
+  rms-backup_rms_dev_2026-10-31_233000_weekly.tar.gz
+  rms-backup_rms_dev_2026-10-30_233000_daily.tar.gz
+  backup.log
+```
+
+| Task | Command |
+|---|---|
+| Back up now | `npm run backup` |
+| List backups | `npm run backup:list` |
+| Check that a backup file is complete | `npm run backup:verify -- <file>` |
+| Restore the newest backup | `npm run restore -- --latest` |
+| Restore a specific file (e.g. from a USB disk) | `npm run restore -- E:\RMS-backups\<file>` |
+
+**In the app: Manage → Backups** (managers only)
+
+- **Back up now** button.
+- **Automatic backups**: on/off, *every day*, *twice a day* or *once a week*, at a chosen time
+  (default: every day at 23:30). Saved in `backup-settings.json` in the backup folder.
+  The schedule runs inside RMS while it is running; if the computer was off at the planned time,
+  the backup is made about two minutes after RMS starts. A failed attempt is retried after 10 minutes.
+- **List of backups** with **Download** (e.g. to save a copy on a USB disk).
+- Restoring is intentionally not a button — see below.
+
+**Optional: Windows scheduled task** (makes backups even when RMS itself is not running):
+
+```bat
+powershell -ExecutionPolicy Bypass -File scripts\windows\schedule-backup.ps1
+```
+
+This creates the task **RMS Backup** (every night at 23:30; runs later if the PC was off; retries if
+Docker is not ready). Use `-Time 22:00` for another time or `-Remove` to delete it. Both schedules can be
+used together; if they start at exactly the same moment you may get one extra copy, which is harmless.
+To use only the Windows task, set `BACKUP_SCHEDULER=off` in `.env.local`.
+
+**What is kept** (grandfather-father-son rotation, about one year of history in ~24 files):
+
+| Kind | When | Kept |
+|---|---|---|
+| Monthly | first backup of each month | 12 |
+| Weekly | first backup of each week (Saturday) | 5 |
+| Daily | every other night | 7 |
+| Manual | `npm run backup` | 10 |
+| Before restore | made automatically by every restore | 5 |
+
+Only files with this exact naming pattern are ever deleted; anything else in the folder is left alone.
+
+**Restoring safely.** Stop the app, then run `npm run restore -- --latest` (or name a file). The restore:
+
+1. checks the backup file (checksums, complete dump);
+2. asks you to type the database name to confirm;
+3. makes a **safety backup of the current data first**, so a restore can always be undone;
+4. replaces the database and the menu pictures;
+5. compares the row count of every table with the backup.
+
+**Recommended practice (3-2-1):** keep backups in at least two places. Set
+`BACKUP_COPY_DIR` in `.env.local` (for example `E:\RMS-backups` on a USB disk or a second drive)
+and every backup is copied there automatically. Once a month, practise a restore by loading your
+newest backup into the test database: `npm run restore -- <newest backup file> --db rms_test`
+(`--latest` always picks the newest backup *of the database being restored*).
+
+The dashboard and Manage → Backups show when the last backup was made and warn if there has been
+none for more than a day.
+
+**Full recovery on a new PC:** install the requirements, `git clone` and `npm ci`, create a new
+`.env.local`, start the database (`docker compose --env-file .env.local up -d`), copy the backup file
+to the PC, then run `npm run restore -- <file>`.
+
 ## Testing
 
-An API regression test (`rms-api-test.mjs`, kept outside this repository) checks login, roles,
-menu, tables, staff, orders, kitchen, payment, dashboard, reports and upload safety — **129 checks**.
+The API regression test in [`tests/api/rms-api-test.mjs`](tests/api/rms-api-test.mjs) checks login,
+roles, menu, tables, staff, orders (including all-or-nothing saving), kitchen, payment, dashboard,
+reports, upload safety and the backup screen — **143 checks**. One check makes a small manual backup
+of the test database. It needs no extra packages.
 
 1. Window A: `set DB_NAME=rms_test` (macOS/Linux: `export DB_NAME=rms_test`), then `npm start`.
-2. Window B: `node rms-api-test.mjs http://localhost:3000 <path to this project>` → expect `FAIL=0`.
+2. Window B, in the project folder: `npm run test:api` → expect `FAIL=0`.
 3. **Close window A afterwards**, because the `DB_NAME` setting lasts for the whole window.
+
+The test creates its own uniquely named records and only reads the sample data, so it can be
+run many times. Never point it at a real (production) database.
 
 > `rms_dev` and `rms_test` share the picture folder `public/uploads/menu`: deleting a sample menu
 > item in either database also deletes its picture for the other.
@@ -209,6 +297,7 @@ menu, tables, staff, orders, kitchen, payment, dashboard, reports and upload saf
 - Uploaded pictures are checked by their real content (JPEG/PNG/WEBP, max 5 MB) and renamed.
 - Database errors are never shown to users; friendly messages only.
 - The database port is bound to `127.0.0.1`.
+- Production dependencies: `npm audit --omit=dev` reports no known vulnerabilities (Next.js 16.3).
 
 ## Project structure
 
@@ -223,15 +312,23 @@ utils/          bill and report printing
 database/       migrations, seed data, Docker init script
 public/         bundled fonts and uploaded menu pictures
 docs/           screenshots for this README
-middleware.js   page and API protection
+tests/api/      API regression test (npm run test:api)
+scripts/        backup, restore and the Windows backup schedule
+proxy.js        page and API protection (called middleware.js before Next.js 16)
 ```
 
 ## Before going to production
 
 - A separate database with unique strong passwords and **no sample data**
 - The first manager account created by a one-time script
-- HTTPS (or a trusted local network only) and automatic off-machine backups
+- HTTPS (or a trusted local network only)
+- The backup schedule installed and `BACKUP_COPY_DIR` pointing to a second disk
 - Not yet tested: printing on a real receipt printer, Safari on iPhone
+
+## License
+
+Proprietary — **all rights reserved**. See [`LICENSE`](LICENSE). The bundled fonts keep their own
+SIL Open Font License.
 
 ## Credits
 

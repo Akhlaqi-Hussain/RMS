@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { FaUtensils, FaUsers } from "react-icons/fa";
+import { FaUtensils, FaUsers, FaDatabase } from "react-icons/fa";
 import PageContainer from "@/components/pageContainer";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -8,6 +8,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import MenuManagementPage from "./menu/menuManagementPage";
 import StaffManagementPage from "./staff/staffManagementPage";
 import TableManagementPage from "./table/tableManagementPage";
+import BackupManagementPage from "./backup/backupManagementPage";
 
 export default function ManagePage() {
   const [activeTab, setActiveTab] = useState("menu");
@@ -50,6 +51,18 @@ export default function ManagePage() {
           <FaUsers className="w-4 h-4" />
           <span>{t("manage.tabTables")}</span>
         </button>
+        {/* BACKUP-3 */}
+        <button
+          onClick={() => setActiveTab("backup")}
+          className={`flex flex-1 sm:flex-none items-center justify-center gap-2 px-3 sm:px-6 py-2 text-sm sm:text-base transition-all ${
+            activeTab === "backup"
+              ? "bg-[color:var(--color-primary)] text-white"
+              : "bg-[color:var(--color-primary-light)] hover:bg-[color:var(--color-primary)] hover:text-white"
+          }`}
+        >
+          <FaDatabase className="w-4 h-4" />
+          <span>{t("manage.tabBackup")}</span>
+        </button>
       </div>
 
       {/* Content */}
@@ -57,6 +70,7 @@ export default function ManagePage() {
         {activeTab === "menu" && <MenuManagementPage />}
         {activeTab === "staff" && <StaffManagementPage />}
         {activeTab === "tables" && <TableManagementPage />}
+        {activeTab === "backup" && <BackupManagementPage />}
       </PageContainer>
     </div>
   );

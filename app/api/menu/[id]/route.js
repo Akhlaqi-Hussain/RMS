@@ -8,7 +8,7 @@ import { requireActiveUser } from "@/lib/session";
 
 // PUT -> Update menu item
 export async function PUT(req, { params }) {
-  // SEC-1/SEC-6: this route is skipped by middleware.js (large uploads), so it checks itself
+  // SEC-1/SEC-6: this route is skipped by proxy.js (large uploads), so it checks itself
   const auth = await requireActiveUser(req, { managerOnly: true });
   if (auth.response) return auth.response;
 
@@ -100,7 +100,7 @@ export async function PUT(req, { params }) {
 
 // PATCH -> Update menu item status only
 export async function PATCH(req, { params }) {
-  // SEC-1/SEC-6: this route is skipped by middleware.js (large uploads), so it checks itself
+  // SEC-1/SEC-6: this route is skipped by proxy.js (large uploads), so it checks itself
   const auth = await requireActiveUser(req, { managerOnly: true });
   if (auth.response) return auth.response;
 
@@ -159,7 +159,7 @@ export async function PATCH(req, { params }) {
 
 // DELETE -> Delete menu item
 export async function DELETE(req, { params }) {
-  // SEC-1/SEC-6: this route is skipped by middleware.js (large uploads), so it checks itself
+  // SEC-1/SEC-6: this route is skipped by proxy.js (large uploads), so it checks itself
   const auth = await requireActiveUser(req, { managerOnly: true });
   if (auth.response) return auth.response;
 
@@ -231,7 +231,7 @@ export async function DELETE(req, { params }) {
 
 // GET -> Get single menu item
 export async function GET(req, { params }) {
-  // SEC-1/SEC-6: this route is skipped by middleware.js (large uploads), so it checks itself
+  // SEC-1/SEC-6: this route is skipped by proxy.js (large uploads), so it checks itself
   const auth = await requireActiveUser(req);
   if (auth.response) return auth.response;
 
