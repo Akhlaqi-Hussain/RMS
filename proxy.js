@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getActiveUser } from "./lib/session";
 
-export async function middleware(req) {
+export async function proxy(req) {
   const { pathname } = req.nextUrl;
 
   // Skip static assets
@@ -38,6 +38,7 @@ export async function middleware(req) {
       pathname.startsWith("/api/staff/") ||
       pathname === "/api/dashboard" ||
       pathname === "/api/reports" ||
+      pathname.startsWith("/api/backups") ||
       (!isRead &&
         (pathname === "/api/tables" ||
           pathname.startsWith("/api/tables/") ||
@@ -81,12 +82,13 @@ export async function middleware(req) {
   return NextResponse.next();
 }
 
+// NEXT-16: this file was called middleware.js before Next.js 16 ("proxy" is
+// the new name; the behaviour is the same). A proxy always runs in the Node.js
+// runtime, so it can check the account in the database (SEC-6, getActiveUser
+// in lib/session.js) without the old `runtime: "nodejs"` setting.
 export const config = {
-  // SEC-6: Node.js runtime so the middleware can check the account in the
-  // database (getActiveUser in lib/session.js; stable since Next.js 15.5).
-  runtime: "nodejs",
   // The menu routes (/api/menu, /api/menu/<id>) are NOT run through this
-  // middleware: in production, Next.js 15.5 breaks request bodies larger than
+  // proxy: in production, Next.js 15.5 broke request bodies larger than
   // about 1 MB that pass through Node.js middleware, which would break picture
   // uploads. Those two routes apply exactly the same checks themselves via
   // requireActiveUser() from lib/session.js.

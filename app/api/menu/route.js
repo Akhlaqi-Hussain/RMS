@@ -8,7 +8,7 @@ import { requireActiveUser } from "@/lib/session";
 
 // POST -> Add menu item with image
 export async function POST(req) {
-  // SEC-1/SEC-6: this route is skipped by middleware.js (large uploads), so it checks itself
+  // SEC-1/SEC-6: this route is skipped by proxy.js (large uploads), so it checks itself
   const auth = await requireActiveUser(req, { managerOnly: true });
   if (auth.response) return auth.response;
 
@@ -73,7 +73,7 @@ export async function POST(req) {
 
 // GET -> Fetch items (all or by category)
 export async function GET(req) {
-  // SEC-1/SEC-6: this route is skipped by middleware.js (large uploads), so it checks itself
+  // SEC-1/SEC-6: this route is skipped by proxy.js (large uploads), so it checks itself
   const auth = await requireActiveUser(req);
   if (auth.response) return auth.response;
 
