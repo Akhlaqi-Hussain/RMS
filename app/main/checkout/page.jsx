@@ -28,7 +28,12 @@ export default function CheckoutPage() {
         const res = await fetch("/api/tables");
         if (!res.ok) throw new Error("Failed to fetch tables");
         const data = await res.json();
-        setTables(data);
+        // D7: inactive tables cannot take new orders, so they are not offered
+        setTables(
+          Array.isArray(data)
+            ? data.filter((tb) => tb.is_active === undefined || Number(tb.is_active) === 1)
+            : []
+        );
       } catch (err) {
         console.error("Error fetching Tables: ", err);
       }
@@ -124,9 +129,25 @@ export default function CheckoutPage() {
 
       toast.success(t("checkout.created"));
 
-      // Print kitchen bill for new orders
-      if (orderType === "new" && data.order) {
-        printKitchenBill(data.order, cartItems, locale);
+      // BUG-6: the API answers { success, orderId } (there is no data.order),
+      // so the kitchen bill for a new order never printed. Build it from the
+      // new order number and the cart. A blocked pop-up must not stop the order.
+      if (orderType === "new" && data.orderId) {
+        try {
+          const table = tables.find((tb) => String(tb.table_id) === String(tableId));
+          printKitchenBill(
+            {
+              order_id: data.orderId,
+              table_no: table?.table_no ?? tableId,
+              created_at: new Date(),
+              note: notes,
+            },
+            cartItems.map((item) => ({ menu_item: item.name, qty: item.quantity })),
+            locale
+          );
+        } catch (printErr) {
+          console.error("Kitchen bill could not be printed:", printErr);
+        }
       }
 
       clearCart();

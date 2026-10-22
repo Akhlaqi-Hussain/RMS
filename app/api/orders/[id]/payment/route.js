@@ -31,8 +31,6 @@ export async function POST(req) {
       );
     }
 
-    console.log(`confirmPayment(${order_id}, ${subtotal}, ${discount})`);
-
     // Call confirmPayment procedure
     // BUG-2: pool.query() always returns its connection to the pool, even on errors
     const [results] = await pool.query("CALL confirmPayment(?, ?, ?)", [

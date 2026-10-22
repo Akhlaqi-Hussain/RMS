@@ -121,7 +121,8 @@
     "dashboardFailed": "داشبورد بارگذاری نشد",
     "reportFailed": "گزارش تهیه نشد",
     "reportTypeInvalid": "نوع گزارش نادرست است",
-    "reportFieldsRequired": "نوع گزارش، تاریخ شروع و تاریخ ختم ضروری است"
+    "reportFieldsRequired": "نوع گزارش، تاریخ شروع و تاریخ ختم ضروری است",
+    "categoryTaken": "این کتگوری قبلاً وجود دارد"
   },
   "login": {
     "welcome": "خوش آمدید",
@@ -204,7 +205,9 @@
     "viewDetails": "مشاهدهٔ جزئیات ←",
     "emptyTitle": "سفارشی وجود ندارد",
     "emptyText": "در حال حاضر هیچ سفارش فعالی در سیستم ثبت نشده است.",
-    "emptyHint": "برای ثبت سفارش جدید به بخش مینو بروید."
+    "emptyHint": "برای ثبت سفارش جدید به بخش مینو بروید.",
+    "statusPaid": "پرداخت شده",
+    "statusCancelled": "لغو شده"
   },
   "orderDetails": {
     "title": "جزئیات سفارش ({id})",
@@ -380,7 +383,8 @@
     "fieldImage": "عکس آیتم",
     "optional": "(اختیاری)",
     "uploadHint": "برای آپلود عکس کلیک کنید",
-    "allowedFormats": "JPG، PNG یا WEBP — حداکثر ۵MB"
+    "allowedFormats": "JPG، PNG یا WEBP — حداکثر ۵MB",
+    "categoryFailed": "کتگوری اضافه نشد"
   },
   "manageStaff": {
     "saveFailed": "معلومات کارمند ذخیره نشد: {reason}",

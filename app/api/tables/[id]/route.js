@@ -4,7 +4,7 @@ import pool from "@/lib/db";
 // GET - Get single table
 export async function GET(req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const [tables] = await pool.query(
       "SELECT * FROM tables WHERE table_id = ?",
@@ -28,7 +28,7 @@ export async function GET(req, { params }) {
 // PUT - Edit table
 export async function PUT(req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { table_no } = await req.json();
 
     if (!table_no || table_no.trim().length === 0) {
