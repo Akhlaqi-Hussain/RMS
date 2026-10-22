@@ -37,8 +37,27 @@ export default function MenuManagementPage() {
     }
   }
 
+  // LINT-1: first load. The list is filled in when the answer arrives
+  // (no state change directly inside the effect); fetchMenuItems() is still used to refresh.
   useEffect(() => {
-    fetchMenuItems();
+    let active = true;
+    fetch("/api/menu", { method: "GET", cache: "no-store" })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch menu items");
+        return res.json();
+      })
+      .then((data) => {
+        if (active) {setMenuItems(data);}
+      })
+      .catch((err) => {
+        console.error("Error fetching menu items:", err.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   // Scroll to form function

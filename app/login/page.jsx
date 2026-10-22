@@ -29,7 +29,9 @@ const LoginPage = () => {
       }
 
       toast.success(t("login.success"));
-      window.location.href = "/main/dashboard"; // Redirect to dashboard or protected page
+      // Full page load on purpose: every screen starts fresh with the new login.
+      // (LINT-1: absolute address instead of assigning a relative one)
+      window.location.assign(new URL("/main/dashboard", window.location.origin));
     } catch (err) {
       console.error("Login error:", err);
       toast.error(t("common.networkError"));

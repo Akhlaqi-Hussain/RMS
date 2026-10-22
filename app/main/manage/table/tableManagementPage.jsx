@@ -36,8 +36,27 @@ export default function TableManagementPage() {
     }
   }
 
+  // LINT-1: first load. The list is filled in when the answer arrives
+  // (no state change directly inside the effect); fetchTables() is still used to refresh.
   useEffect(() => {
-    fetchTables();
+    let active = true;
+    fetch("/api/tables", { method: "GET", cache: "no-store" })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch tables");
+        return res.json();
+      })
+      .then((data) => {
+        if (active) {setTables(data);}
+      })
+      .catch((err) => {
+        console.error("Error fetching tables:", err.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   // Scroll to form function

@@ -1,10 +1,17 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import PageContainer from "@/components/pageContainer";
 import toast from "react-hot-toast";
 import { printCustomerBill, printKitchenBill } from "@/utils/printBill";
 import { useLanguage } from "@/context/LanguageContext";
+
+function getOrderDetails(orderId) {
+  return fetch(`/api/orders/${orderId}`).then((res) => {
+    if (!res.ok) throw new Error("Failed to fetch order details");
+    return res.json();
+  });
+}
 
 export default function OrderDetailsPage() {
   const params = useParams();
@@ -23,24 +30,27 @@ export default function OrderDetailsPage() {
   const { t, tServer, locale, formatMoney, formatNumber, formatDate, formatDateTime } =
     useLanguage();
 
+  // Puts the order data from the server on the screen (used by the first load
+  // and by every refresh after cancel / payment / edit).
+  const showOrderDetails = useCallback((data) => {
+    console.log(data);
+
+    setOrder(data.order);
+    setItems(data.items || []);
+    setBill(data.bill || null);
+    setRole(data.role);
+
+    const totalAmount = data.items.reduce(
+      (sum, item) => sum + item.qty * item.price,
+      0
+    );
+    setTotal(totalAmount);
+  }, []);
+
   const fetchOrderDetails = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/orders/${orderId}`);
-      if (!res.ok) throw new Error("Failed to fetch order details");
-      const data = await res.json();
-      console.log(data);
-
-      setOrder(data.order);
-      setItems(data.items || []);
-      setBill(data.bill || null);
-      setRole(data.role);
-
-      const totalAmount = data.items.reduce(
-        (sum, item) => sum + item.qty * item.price,
-        0
-      );
-      setTotal(totalAmount);
+      showOrderDetails(await getOrderDetails(orderId));
     } catch (err) {
       console.error("Error fetching order details:", err);
       toast.error(t("orderDetails.loadFailed"));
@@ -49,9 +59,26 @@ export default function OrderDetailsPage() {
     }
   };
 
+  // LINT-1: first load. The order is shown when the answer arrives
+  // (no state change directly inside the effect).
   useEffect(() => {
-    if (orderId) fetchOrderDetails();
-  }, [orderId]);
+    if (!orderId) return;
+    let active = true;
+    getOrderDetails(orderId)
+      .then((data) => {
+        if (active) showOrderDetails(data);
+      })
+      .catch((err) => {
+        console.error("Error fetching order details:", err);
+        if (active) toast.error(t("orderDetails.loadFailed"));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [orderId, t, showOrderDetails]);
 
   const handleCancel = async () => {
     if (cancelLoading) return;

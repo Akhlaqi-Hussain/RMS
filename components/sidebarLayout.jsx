@@ -50,7 +50,8 @@ export default function SidebarLayout({ children }) {
   const handleLogout = async () => {
     try {
       await fetch("/api/logout", { method: "POST" });
-      window.location.href = "/login";
+      // Full page load on purpose, so nothing of the old session stays on screen.
+      window.location.assign(new URL("/login", window.location.origin));
     } catch (err) {
       console.error("Logout failed:", err);
     }

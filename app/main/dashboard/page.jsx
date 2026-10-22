@@ -12,6 +12,48 @@ import {
 import { useLanguage } from "@/context/LanguageContext";
 import BackupStatus from "@/components/backupStatus";
 
+// LINT-1: defined outside the page so they are not re-created on every render
+const StatCard = ({ title, value, icon }) => (
+  <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-md transition-all duration-300">
+    <div className="flex items-center justify-between">
+      <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+        {icon}
+      </div>
+      <div className="text-end">
+        <p className="text-sm font-medium text-gray-600">{title}</p>
+        <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+      </div>
+    </div>
+  </div>
+);
+
+const StatusBadge = ({ status }) => {
+  const { t } = useLanguage();
+  const statusConfig = {
+    completed: {
+      color: "bg-green-50 text-green-700 border-green-200",
+      text: t("dashboard.statusCompleted"),
+    },
+    preparing: {
+      color: "bg-yellow-50 text-yellow-700 border-yellow-200",
+      text: t("dashboard.statusPreparing"),
+    },
+    pending: {
+      color: "bg-red-50 text-red-700 border-red-200",
+      text: t("dashboard.statusPending"),
+    },
+  };
+
+  const config = statusConfig[status] || statusConfig.pending;
+  return (
+    <span
+      className={`px-3 py-1 rounded-full text-xs font-medium border ${config.color}`}
+    >
+      {config.text}
+    </span>
+  );
+};
+
 export default function Dashboard() {
   const { t, formatMoney, formatNumber, formatTime } = useLanguage();
   const [stats, setStats] = useState({
@@ -24,15 +66,9 @@ export default function Dashboard() {
   const [recentOrders, setRecentOrders] = useState([]);
   const [topMenuItems, setTopMenuItems] = useState([]);
 
+  // LINT-1: load once; the screen is updated when the answer arrives
   useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
-    try {
-      const res = await fetch("/api/dashboard");
-      const data = await res.json();
-
+    const applyData = (data) => {
       console.log(data.todaysStats);
 
       setStats({
@@ -61,50 +97,13 @@ export default function Dashboard() {
           revenue: item.total_revenue,
         })) || []
       );
-    } catch (err) {
-      console.error("Failed to load dashboard data:", err);
-    }
-  };
-
-  const StatCard = ({ title, value, icon }) => (
-    <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-md transition-all duration-300">
-      <div className="flex items-center justify-between">
-        <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
-          {icon}
-        </div>
-        <div className="text-end">
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-        </div>
-      </div>
-    </div>
-  );
-
-  const StatusBadge = ({ status }) => {
-    const statusConfig = {
-      completed: {
-        color: "bg-green-50 text-green-700 border-green-200",
-        text: t("dashboard.statusCompleted"),
-      },
-      preparing: {
-        color: "bg-yellow-50 text-yellow-700 border-yellow-200",
-        text: t("dashboard.statusPreparing"),
-      },
-      pending: {
-        color: "bg-red-50 text-red-700 border-red-200",
-        text: t("dashboard.statusPending"),
-      },
     };
 
-    const config = statusConfig[status] || statusConfig.pending;
-    return (
-      <span
-        className={`px-3 py-1 rounded-full text-xs font-medium border ${config.color}`}
-      >
-        {config.text}
-      </span>
-    );
-  };
+    fetch("/api/dashboard")
+      .then((res) => res.json())
+      .then(applyData)
+      .catch((err) => console.error("Failed to load dashboard data:", err));
+  }, []);
 
   return (
     <div className="min-h-screen p-1 sm:p-4 md:p-6">
