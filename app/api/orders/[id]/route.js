@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { withTransaction } from "@/lib/transaction";
 import { getUserFromToken } from "@/lib/auth";
 import { publicErrorMessage, errorStatus } from "@/lib/errors";
 
@@ -37,14 +38,17 @@ export async function POST(req, { params }) {
       );
     }
 
-    for (const item of items) {
-      await pool.query("CALL addOrderItems(?, ?, ?, ?)", [
-        orderId,
-        item.menu_item_id,
-        item.qty,
-        item.price,
-      ]);
-    }
+    // BUG-4: all new items are added together or not at all
+    await withTransaction(async (conn) => {
+      for (const item of items) {
+        await conn.query("CALL addOrderItems(?, ?, ?, ?)", [
+          orderId,
+          item.menu_item_id,
+          item.qty,
+          item.price,
+        ]);
+      }
+    });
 
     return NextResponse.json({ success: true, orderId });
   } catch (err) {

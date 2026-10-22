@@ -123,8 +123,11 @@ export default function MenuPage() {
       </div>
 
       {/* Category buttons */}
-      <div className="w-full overflow-x-auto flex sm:justify-center px-1">
-        <div className="inline-flex shrink-0 rounded-lg overflow-hidden border border-gray-300">
+      {/* UI-03: with many categories the strip used to cut off buttons that
+          could not be scrolled to. w-max + mx-auto keeps it centred when it
+          fits and makes every button reachable by scrolling when it does not. */}
+      <div className="w-full overflow-x-auto px-1 pb-1">
+        <div className="flex w-max mx-auto rounded-lg overflow-hidden border border-gray-300">
           {categories.map((cat) => (
             <button
               key={cat.id}

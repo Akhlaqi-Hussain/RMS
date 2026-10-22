@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { withTransaction } from "@/lib/transaction";
 import { getUserFromToken } from "@/lib/auth";
 import { publicErrorMessage, errorStatus } from "@/lib/errors";
 
@@ -20,23 +21,27 @@ export async function POST(req) {
       );
     }
 
-    // Call stored procedure to create order
-    const [orderRows] = await pool.query("CALL createOrder(?, ?, ?)", [
-      table_id,
-      user.id,
-      notes || null,
-    ]);
-    const orderId = orderRows[0][0].order_id;
-
-    // Add items
-    for (const item of items) {
-      await pool.query("CALL addOrderItems(?, ?, ?, ?)", [
-        orderId,
-        item.menu_item_id,
-        item.qty,
-        item.price,
+    // BUG-4: the order and all its items are saved together or not at all
+    const orderId = await withTransaction(async (conn) => {
+      // Call stored procedure to create order
+      const [orderRows] = await conn.query("CALL createOrder(?, ?, ?)", [
+        table_id,
+        user.id,
+        notes || null,
       ]);
-    }
+      const newOrderId = orderRows[0][0].order_id;
+
+      // Add items
+      for (const item of items) {
+        await conn.query("CALL addOrderItems(?, ?, ?, ?)", [
+          newOrderId,
+          item.menu_item_id,
+          item.qty,
+          item.price,
+        ]);
+      }
+      return newOrderId;
+    });
 
     return NextResponse.json({ success: true, orderId });
   } catch (err) {
