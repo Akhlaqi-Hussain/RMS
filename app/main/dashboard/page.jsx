@@ -10,6 +10,7 @@ import {
   FaTicketAlt,
 } from "react-icons/fa";
 import { useLanguage } from "@/context/LanguageContext";
+import BackupStatus from "@/components/backupStatus";
 
 export default function Dashboard() {
   const { t, formatMoney, formatNumber, formatTime } = useLanguage();
@@ -114,6 +115,9 @@ export default function Dashboard() {
         </h1>
         <p className="text-gray-600 mt-2">{t("dashboard.subtitle")}</p>
       </div>
+
+      {/* BACKUP-2: last backup / warning */}
+      <BackupStatus />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">

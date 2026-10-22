@@ -192,7 +192,8 @@
   "manage": {
     "tabMenu": "Menu",
     "tabStaff": "Staff",
-    "tabTables": "Tables"
+    "tabTables": "Tables",
+    "tabBackup": "Backups"
   },
   "orders": {
     "loading": "Loading orders...",
@@ -431,5 +432,63 @@
     "numberPlaceholder": "e.g. A-21, 15, VIP-1",
     "numberHint": "You can use numbers, letters and hyphens",
     "numberMin": "The table number must have at least 1 character"
+  },
+  "backup": {
+    "last": "Last backup: {date} ({tier})",
+    "none": "No backup has been made yet",
+    "summary": "{count} backups kept, latest {size}.",
+    "staleHint": "There has been no backup in the last 24 hours. Ask your administrator to run \"npm run backup\" and to check the scheduled task \"RMS Backup\".",
+    "noSecondCopy": "Tip: keep a second copy on a USB disk (BACKUP_COPY_DIR).",
+    "tier": {
+      "daily": "daily",
+      "weekly": "weekly",
+      "monthly": "monthly",
+      "manual": "manual",
+      "pre-restore": "before a restore"
+    },
+    "title": "Backups",
+    "now": "Back up now",
+    "running": "Backing up…",
+    "done": "Backup created and checked",
+    "failed": "The backup failed. Is the database (Docker) running?",
+    "busy": "A backup is already running",
+    "loadFailed": "Could not load the backups",
+    "nextRun": "Next automatic backup: {date}",
+    "autoOff": "Automatic backups are switched off.",
+    "lastFailed": "The last backup attempt failed ({date}). It will be tried again.",
+    "scheduleTitle": "Automatic backups",
+    "enabled": "Make backups automatically",
+    "frequency": "How often",
+    "time": "Time",
+    "weekday": "Day",
+    "freq": {
+      "daily": "Every day",
+      "twice-daily": "Twice a day (every 12 hours)",
+      "weekly": "Once a week"
+    },
+    "scheduleHint": "Backups run while RMS is running. If the computer was off at that time, the backup is made a few minutes after RMS starts.",
+    "keepHint": "Kept: {daily} daily, {weekly} weekly, {monthly} monthly and {manual} manual backups; older ones are removed automatically.",
+    "schedulerOff": "The automatic schedule is switched off on this server (BACKUP_SCHEDULER=off). The Windows task may be used instead.",
+    "scheduleSaved": "Backup schedule saved",
+    "scheduleFailed": "Could not save the backup schedule",
+    "listTitle": "Saved backups ({count})",
+    "colDate": "Date",
+    "colKind": "Kind",
+    "colSize": "Size",
+    "download": "Download",
+    "copyTitle": "Second copy",
+    "copyOn": "Every backup is also copied to the second location (USB / second disk).",
+    "copyOff": "Not set up. Ask your administrator to set BACKUP_COPY_DIR so every backup is also copied to a USB disk or second drive. You can also download a backup here and save it on a USB disk.",
+    "restoreTitle": "Restoring",
+    "restoreHint": "Restoring replaces all current data, so it is done by the administrator on the server computer. A safety copy of the current data is made first, so it can be undone."
+  },
+  "weekdays": {
+    "0": "Sunday",
+    "1": "Monday",
+    "2": "Tuesday",
+    "3": "Wednesday",
+    "4": "Thursday",
+    "5": "Friday",
+    "6": "Saturday"
   }
 }

@@ -15,6 +15,9 @@
 // Version 4 (cleanup round): HOME-1 "/" goes to /login, BUG-3 add-table
 // response, empty table number, BUG-9 category errors, BUG-7 cashier pages.
 // Version 5 (round 4): BUG-4 orders are saved all-or-nothing (transactions).
+// Version 6: BACKUP-2 backup status API (manager only, read-only).
+// Version 7: BACKUP-3 Manage → Backups (backup now, schedule, download).
+//   Makes one small "manual" backup of the database the app uses (rms_test).
 // =====================================================================
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -81,6 +84,34 @@ async function main() {
   check("PAGES manager can open /main/manage", r.status === 200, r.status);
   r = await call(null, "GET", "/");
   check("HOME-1 / redirects to /login", [307, 308].includes(r.status) && (r.headers.get("location") || "").includes("/login"), `${r.status} ${r.headers.get("location")}`);
+  r = await call(null, "GET", "/api/backups/status");
+  check("BACKUP-2 status without login → 401", r.status === 401, r.status);
+  r = await call("waiter1", "GET", "/api/backups/status");
+  check("BACKUP-2 status for waiter → 403", r.status === 403, r.status);
+  r = await call("manager1", "GET", "/api/backups/status");
+  check("BACKUP-2 manager sees backup status", r.status === 200 && typeof r.json?.stale === "boolean" && Number.isInteger(r.json?.count), r.text);
+  r = await call("cashier1", "GET", "/api/backups");
+  check("BACKUP-3 cashier cannot open backups (403)", r.status === 403, r.status);
+  r = await call("manager1", "GET", "/api/backups");
+  const savedSettings = r.json?.settings;
+  check("BACKUP-3 manager sees backups and schedule", r.status === 200 && Array.isArray(r.json?.backups) && !!savedSettings, r.text);
+  r = await call("manager1", "PUT", "/api/backups/settings", { enabled: true, frequency: "hourly", time: "25:99", weekday: 9 });
+  check("BACKUP-3 invalid schedule rejected (400)", r.status === 400, r.text);
+  r = await call("manager1", "PUT", "/api/backups/settings", { enabled: true, frequency: "weekly", time: "22:15", weekday: 5 });
+  check("BACKUP-3 schedule saved (weekly, Friday 22:15)", r.status === 200 && r.json?.settings?.frequency === "weekly" && r.json?.settings?.time === "22:15", r.text);
+  if (savedSettings) await call("manager1", "PUT", "/api/backups/settings", savedSettings); // put the user's schedule back
+  r = await call("waiter1", "POST", "/api/backups");
+  check("BACKUP-3 waiter cannot start a backup (403)", r.status === 403, r.status);
+  r = await call("manager1", "POST", "/api/backups", undefined, { timeoutMs: 300000 });
+  const newBackup = r.json?.name;
+  check("BACKUP-3 'Back up now' creates a checked backup", r.status === 200 && /^rms-backup_.+_manual\.tar\.gz$/.test(newBackup || ""), r.text);
+  if (newBackup) {
+    const res = await fetch(`${BASE}/api/backups/download?name=${encodeURIComponent(newBackup)}`, { headers: { cookie: jars.manager1 }, redirect: "manual" });
+    const buf = Buffer.from(await res.arrayBuffer());
+    check("BACKUP-3 backup can be downloaded (gzip file)", res.status === 200 && buf.length > 1000 && buf[0] === 0x1f && buf[1] === 0x8b, `${res.status} ${buf.length} bytes`);
+  }
+  r = await call("manager1", "GET", "/api/backups/download?name=..%2F..%2Fproject%2F.env.local");
+  check("BACKUP-3 download refuses other files (404)", r.status === 404, r.status);
   r = await call("cashier1", "GET", "/main/dashboard");
   check("BUG-7 cashier sent away from /main/dashboard", r.status === 307 && (r.headers.get("location") || "").includes("/main/orders"), r.headers.get("location"));
 

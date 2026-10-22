@@ -35,6 +35,7 @@ Trilingual (**English · دری · پښتو**) · fully **offline** · role-base
 - [Languages](#languages)
 - [Offline use and fonts](#offline-use-and-fonts)
 - [Database](#database)
+- [Backup and restore](#backup-and-restore)
 - [Testing](#testing)
 - [Security](#security)
 - [Project structure](#project-structure)
@@ -49,6 +50,7 @@ Trilingual (**English · دری · پښتو**) · fully **offline** · role-base
 | 🧾 **Ordering** | Browse the menu by category, add to a cart, place an order for a table or add items to an open order |
 | 👨‍🍳 **Kitchen** | A kitchen ticket prints automatically for new orders; items move from *pending* to *in progress* |
 | 💵 **Payment** | Discounts, confirmation, printed customer bill; totals are always recalculated by the database |
+| 💾 **Backups** | Manage → Backups: back up now, automatic schedule (daily / twice a day / weekly), download; verified backups of the database and pictures; safe restore |
 | 🔒 **Safe saving** | An order and its items are saved together in one database transaction — never half-saved |
 | 📊 **Dashboard** | Total and today's revenue, discounts, orders, recent orders and the most popular items |
 | 📈 **Reports** | Sales, financial, orders and products reports for any date range, printable |
@@ -147,6 +149,7 @@ npm run dev
 | Start the app (development) | `npm run dev` |
 | Lint | `npm run lint` |
 | API regression test (app running on `rms_test`) | `npm run test:api` |
+| Back up now / restore the newest backup | `npm run backup` / `npm run restore -- --latest` |
 | Production build and start | `npm run build` then `npm start` |
 | Stop the database (data is kept) | `docker compose --env-file .env.local stop` |
 
@@ -194,11 +197,88 @@ MySQL 8.4 runs in Docker on `127.0.0.1:3307`, reachable only from the same compu
 
 Prices and bill totals are always taken from the database, never from the browser.
 
+## Backup and restore
+
+Every backup is **one file** that contains the whole database (tables, data, stored procedures),
+all menu pictures and a manifest with a checksum for every file and the row count of every table.
+Each backup is read back and checked right after it is made.
+
+```text
+rms-backups/
+  rms-backup_rms_dev_2026-11-01_233000_monthly.tar.gz
+  rms-backup_rms_dev_2026-10-31_233000_weekly.tar.gz
+  rms-backup_rms_dev_2026-10-30_233000_daily.tar.gz
+  backup.log
+```
+
+| Task | Command |
+|---|---|
+| Back up now | `npm run backup` |
+| List backups | `npm run backup:list` |
+| Check that a backup file is complete | `npm run backup:verify -- <file>` |
+| Restore the newest backup | `npm run restore -- --latest` |
+| Restore a specific file (e.g. from a USB disk) | `npm run restore -- E:\RMS-backups\<file>` |
+
+**In the app: Manage → Backups** (managers only)
+
+- **Back up now** button.
+- **Automatic backups**: on/off, *every day*, *twice a day* or *once a week*, at a chosen time
+  (default: every day at 23:30). Saved in `backup-settings.json` in the backup folder.
+  The schedule runs inside RMS while it is running; if the computer was off at the planned time,
+  the backup is made about two minutes after RMS starts. A failed attempt is retried after 10 minutes.
+- **List of backups** with **Download** (e.g. to save a copy on a USB disk).
+- Restoring is intentionally not a button — see below.
+
+**Optional: Windows scheduled task** (makes backups even when RMS itself is not running):
+
+```bat
+powershell -ExecutionPolicy Bypass -File scripts\windows\schedule-backup.ps1
+```
+
+This creates the task **RMS Backup** (every night at 23:30; runs later if the PC was off; retries if
+Docker is not ready). Use `-Time 22:00` for another time or `-Remove` to delete it. Both schedules can be
+used together; if they start at exactly the same moment you may get one extra copy, which is harmless.
+To use only the Windows task, set `BACKUP_SCHEDULER=off` in `.env.local`.
+
+**What is kept** (grandfather-father-son rotation, about one year of history in ~24 files):
+
+| Kind | When | Kept |
+|---|---|---|
+| Monthly | first backup of each month | 12 |
+| Weekly | first backup of each week (Saturday) | 5 |
+| Daily | every other night | 7 |
+| Manual | `npm run backup` | 10 |
+| Before restore | made automatically by every restore | 5 |
+
+Only files with this exact naming pattern are ever deleted; anything else in the folder is left alone.
+
+**Restoring safely.** Stop the app, then run `npm run restore -- --latest` (or name a file). The restore:
+
+1. checks the backup file (checksums, complete dump);
+2. asks you to type the database name to confirm;
+3. makes a **safety backup of the current data first**, so a restore can always be undone;
+4. replaces the database and the menu pictures;
+5. compares the row count of every table with the backup.
+
+**Recommended practice (3-2-1):** keep backups in at least two places. Set
+`BACKUP_COPY_DIR` in `.env.local` (for example `E:\RMS-backups` on a USB disk or a second drive)
+and every backup is copied there automatically. Once a month, practise a restore by loading your
+newest backup into the test database: `npm run restore -- <newest backup file> --db rms_test`
+(`--latest` always picks the newest backup *of the database being restored*).
+
+The dashboard and Manage → Backups show when the last backup was made and warn if there has been
+none for more than a day.
+
+**Full recovery on a new PC:** install the requirements, `git clone` and `npm ci`, create a new
+`.env.local`, start the database (`docker compose --env-file .env.local up -d`), copy the backup file
+to the PC, then run `npm run restore -- <file>`.
+
 ## Testing
 
 The API regression test in [`tests/api/rms-api-test.mjs`](tests/api/rms-api-test.mjs) checks login,
 roles, menu, tables, staff, orders (including all-or-nothing saving), kitchen, payment, dashboard,
-reports and upload safety — **132 checks**. It needs no extra packages.
+reports, upload safety and the backup screen — **143 checks**. One check makes a small manual backup
+of the test database. It needs no extra packages.
 
 1. Window A: `set DB_NAME=rms_test` (macOS/Linux: `export DB_NAME=rms_test`), then `npm start`.
 2. Window B, in the project folder: `npm run test:api` → expect `FAIL=0`.
@@ -233,6 +313,7 @@ database/       migrations, seed data, Docker init script
 public/         bundled fonts and uploaded menu pictures
 docs/           screenshots for this README
 tests/api/      API regression test (npm run test:api)
+scripts/        backup, restore and the Windows backup schedule
 proxy.js        page and API protection (called middleware.js before Next.js 16)
 ```
 
@@ -240,7 +321,8 @@ proxy.js        page and API protection (called middleware.js before Next.js 16)
 
 - A separate database with unique strong passwords and **no sample data**
 - The first manager account created by a one-time script
-- HTTPS (or a trusted local network only) and automatic off-machine backups
+- HTTPS (or a trusted local network only)
+- The backup schedule installed and `BACKUP_COPY_DIR` pointing to a second disk
 - Not yet tested: printing on a real receipt printer, Safari on iPhone
 
 ## License

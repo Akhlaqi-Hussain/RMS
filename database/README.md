@@ -28,25 +28,23 @@ The app connects as the limited user `rms_app`, which can read and write data bu
 | Stop it (data is kept) | `docker compose --env-file .env.local stop` |
 | See the first-start log | `docker compose --env-file .env.local logs db` |
 
-## Backup (Windows Command Prompt, from the project folder)
-Keep backups OUTSIDE the project folder — they contain data and must never be committed.
-```
-mkdir G:\Projects\rms-backups
-docker compose --env-file .env.local exec -T db sh -c "mysqldump -uroot -p$MYSQL_ROOT_PASSWORD --routines --single-transaction rms_dev" > G:\Projects\rms-backups\backup_rms_dev.sql
-```
-- `-T` is required: without it the output file can be corrupted.
-- `$MYSQL_ROOT_PASSWORD` is read *inside* the container, so the password never appears on screen.
-- `--routines` includes the 25 stored procedures.
+## Backup and restore
 
-## Restore check (into a separate scratch database — the original is not touched)
-```
-docker compose --env-file .env.local exec -T db sh -c "mysql -uroot -p$MYSQL_ROOT_PASSWORD -e 'CREATE DATABASE rms_restore_check CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'"
-docker compose --env-file .env.local exec -T db sh -c "mysql -uroot -p$MYSQL_ROOT_PASSWORD rms_restore_check" < G:\Projects\rms-backups\backup_rms_dev.sql
-docker compose --env-file .env.local exec -T db sh -c "mysql -uroot -p$MYSQL_ROOT_PASSWORD -e 'SELECT COUNT(*) FROM rms_dev.orders; SELECT COUNT(*) FROM rms_restore_check.orders'"
-docker compose --env-file .env.local exec -T db sh -c "mysql -uroot -p$MYSQL_ROOT_PASSWORD -e 'DROP DATABASE rms_restore_check'"
-```
-The two counts must be equal. The last line removes only the scratch copy.
-To restore *for real* (replacing rms_dev), ask first — that is a destructive action.
+RMS has a complete backup system. Managers use **Manage → Backups** in the app (back up now,
+automatic schedule, download). The full guide is in the main [README](../README.md#backup-and-restore).
+
+| Task | Command (in the project folder) |
+|---|---|
+| Back up now | `npm run backup` |
+| List backups | `npm run backup:list` |
+| Check a backup file | `npm run backup:verify -- <file>` |
+| Restore the newest backup | `npm run restore -- --latest` |
+| Restore a specific file | `npm run restore -- <file>` |
+
+Each backup is one `.tar.gz` file with the database dump (tables, data, the 25 stored
+procedures), the menu pictures and a manifest with checksums and row counts.
+A restore always makes a safety backup of the current data first, and checks
+every table's row count afterwards.
 
 ## Changing the schema later
 Never edit a migration that has already been applied. Add a new numbered file
