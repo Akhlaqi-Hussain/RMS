@@ -1,16 +1,18 @@
 "use client";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function StaffList({ staff, onEdit, onDelete, onToggleStatus }) {
+  const { t } = useLanguage();
   if (!staff.length) {
     return (
       <div className="text-center py-12">
         <div className="bg-gray-50 rounded-2xl p-8 max-w-md mx-auto">
           <div className="text-gray-400 text-6xl mb-4">👥</div>
           <p className="text-gray-500 text-lg font-medium">
-            هیچ پرسنلی پیدا نشد
+            {t("manageStaff.emptyTitle")}
           </p>
           <p className="text-gray-400 mt-2">
-            برای شروع، پرسنل جدیدی به سیستم اضافه کنید
+            {t("manageStaff.emptyHint")}
           </p>
         </div>
       </div>
@@ -37,15 +39,15 @@ export default function StaffList({ staff, onEdit, onDelete, onToggleStatus }) {
   const getRoleText = (role) => {
     switch (role) {
       case "admin":
-        return "مدیر سیستم";
+        return t("roles.admin");
       case "manager":
-        return "مدیر";
+        return t("roles.manager");
       case "cashier":
-        return "صندوقدار";
+        return t("roles.cashier");
       case "waiter":
-        return "گارسون";
+        return t("roles.waiter");
       case "chef":
-        return "آشپز";
+        return t("roles.chef");
       default:
         return role;
     }
@@ -57,17 +59,17 @@ export default function StaffList({ staff, onEdit, onDelete, onToggleStatus }) {
         <table className="w-full">
           <thead className="bg-gradient-to-r from-gray-50 to-gray-50/80 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">
-                پرسنل
+              <th className="px-3 sm:px-6 py-4 text-start text-sm font-semibold text-gray-700 whitespace-nowrap">
+                {t("manageStaff.colStaff")}
               </th>
-              <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">
-                نقش
+              <th className="px-3 sm:px-6 py-4 text-start text-sm font-semibold text-gray-700 whitespace-nowrap">
+                {t("manageStaff.colRole")}
               </th>
-              <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">
-                وضعیت
+              <th className="px-3 sm:px-6 py-4 text-start text-sm font-semibold text-gray-700 whitespace-nowrap">
+                {t("common.status")}
               </th>
-              <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">
-                عملیات
+              <th className="px-3 sm:px-6 py-4 text-start text-sm font-semibold text-gray-700 whitespace-nowrap">
+                {t("common.actions")}
               </th>
             </tr>
           </thead>
@@ -77,7 +79,7 @@ export default function StaffList({ staff, onEdit, onDelete, onToggleStatus }) {
                 key={staffMember.id}
                 className="hover:bg-gray-50/50 transition-colors duration-150"
               >
-                <td className="px-6 py-4">
+                <td className="px-3 sm:px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div>
                       <h3 className="font-medium text-gray-900">
@@ -89,7 +91,7 @@ export default function StaffList({ staff, onEdit, onDelete, onToggleStatus }) {
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-3 sm:px-6 py-4">
                   <span
                     className={`inline-flex items-center px-3 py-1 rounded-full border text-sm font-medium ${getRoleBadgeColor(
                       staffMember.role
@@ -98,7 +100,7 @@ export default function StaffList({ staff, onEdit, onDelete, onToggleStatus }) {
                     {getRoleText(staffMember.role)}
                   </span>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-3 sm:px-6 py-4">
                   <button
                     onClick={() =>
                       onToggleStatus(staffMember.id, staffMember.active)
@@ -109,15 +111,15 @@ export default function StaffList({ staff, onEdit, onDelete, onToggleStatus }) {
                         : "bg-red-100 text-red-800 border border-red-200 hover:bg-red-200"
                     }`}
                   >
-                    {staffMember.active ? "فعال" : "غیرفعال"}
+                    {staffMember.active ? t("common.active") : t("common.inactive")}
                   </button>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-3 sm:px-6 py-4">
                   <button
                     onClick={() => onEdit(staffMember)}
                     className="inline-flex items-center px-4 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 font-medium text-sm transition-all duration-200 hover:shadow-sm"
                   >
-                    ویرایش
+                    {t("common.edit")}
                   </button>
                 </td>
               </tr>

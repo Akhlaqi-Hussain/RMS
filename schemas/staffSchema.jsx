@@ -1,34 +1,36 @@
 import { z } from "zod";
 
+// I18N-01: error messages are translation keys; forms show them with t().
+
 const nameRegex = /^[\u0600-\u06FFa-zA-Z\s]+$/;
 
 export const staffSchema = z
   .object({
     firstName: z
       .string()
-      .min(2, "نام باید حداقل ۲ کاراکتر داشته باشد")
-      .regex(nameRegex, "نام باید فقط شامل حروف فارسی یا انگلیسی باشد"),
+      .min(2, "validation.firstNameMin")
+      .regex(nameRegex, "validation.firstNameLetters"),
     lastName: z
       .string()
-      .min(2, "نام خانوادگی باید حداقل ۲ کاراکتر داشته باشد")
+      .min(2, "validation.lastNameMin")
       .regex(
         nameRegex,
-        "نام خانوادگی باید فقط شامل حروف فارسی یا انگلیسی باشد"
+        "validation.lastNameLetters"
       ),
-    role: z.string().nonempty("لطفا یک نقش انتخاب کنید"),
+    role: z.string().nonempty("validation.roleRequired"),
     phone: z
       .string()
-      .regex(/^07[0-9]{8}$/, "شماره تلفن باید با 07 شروع شود و 10 رقم باشد"),
+      .regex(/^07[0-9]{8}$/, "validation.phoneFormat"),
     username: z
       .string()
-      .min(4, "نام کاربری باید حداقل ۴ کاراکتر داشته باشد")
+      .min(4, "validation.usernameMin")
       .regex(
         /^[a-zA-Z0-9_]+$/,
-        "نام کاربری فقط می‌تواند شامل حروف انگلیسی، اعداد و زیرخط باشد"
+        "validation.usernameChars"
       ),
     password: z
       .string()
-      .min(6, "رمز عبور باید حداقل ۶ کاراکتر داشته باشد")
+      .min(6, "validation.passwordMin")
       .optional()
       .or(z.literal("")),
     confirmPassword: z.string().optional().or(z.literal("")),
@@ -41,7 +43,7 @@ export const staffSchema = z
       return true;
     },
     {
-      message: "رمز عبور و تکرار آن مطابقت ندارند",
+      message: "validation.passwordMismatch",
       path: ["confirmPassword"],
     }
   );
@@ -50,25 +52,25 @@ export const staffEditSchema = z
   .object({
     firstName: z
       .string()
-      .min(2, "نام باید حداقل ۲ کاراکتر داشته باشد")
-      .regex(nameRegex, "نام باید فقط شامل حروف فارسی یا انگلیسی باشد"),
+      .min(2, "validation.firstNameMin")
+      .regex(nameRegex, "validation.firstNameLetters"),
     lastName: z
       .string()
-      .min(2, "نام خانوادگی باید حداقل ۲ کاراکتر داشته باشد")
+      .min(2, "validation.lastNameMin")
       .regex(
         nameRegex,
-        "نام خانوادگی باید فقط شامل حروف فارسی یا انگلیسی باشد"
+        "validation.lastNameLetters"
       ),
-    role: z.string().nonempty("لطفا یک نقش انتخاب کنید"),
+    role: z.string().nonempty("validation.roleRequired"),
     phone: z
       .string()
-      .regex(/^07[0-9]{8}$/, "شماره تلفن باید با 07 شروع شود و 10 رقم باشد"),
+      .regex(/^07[0-9]{8}$/, "validation.phoneFormat"),
     username: z
       .string()
-      .min(4, "نام کاربری باید حداقل ۴ کاراکتر داشته باشد")
+      .min(4, "validation.usernameMin")
       .regex(
         /^[a-zA-Z0-9_]+$/,
-        "نام کاربری فقط می‌تواند شامل حروف انگلیسی، اعداد و زیرخط باشد"
+        "validation.usernameChars"
       ),
     password: z.string().optional().or(z.literal("")),
     confirmPassword: z.string().optional().or(z.literal("")),
@@ -81,7 +83,7 @@ export const staffEditSchema = z
       return true;
     },
     {
-      message: "رمز عبور و تکرار آن مطابقت ندارند",
+      message: "validation.passwordMismatch",
       path: ["confirmPassword"],
     }
   );
@@ -99,7 +101,7 @@ export const validateField = (schema, fieldName, value, allData = {}) => {
       );
       if (fieldError) return { isValid: false, error: fieldError.message };
     }
-    return { isValid: false, error: "خطای نامشخص" };
+    return { isValid: false, error: "common.unknownError" };
   }
 };
 
@@ -120,6 +122,6 @@ export const validateForm = (schema, formData) => {
       });
       return { isValid: false, errors };
     }
-    return { isValid: false, errors: { general: "خطای نامشخص" } };
+    return { isValid: false, errors: { general: "common.unknownError" } };
   }
 };

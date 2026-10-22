@@ -1,15 +1,17 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useLanguage } from "@/context/LanguageContext";
 
 const TableForm = ({
   initialData = {},
   onSubmit,
-  submitButtonText = "ثبت میز",
+  submitButtonText,
   isEditing = false,
   onCancel,
   resetTrigger,
   isSubmitting = false,
 }) => {
+  const { t } = useLanguage();
   const [tableNo, setTableNo] = useState("");
   const [error, setError] = useState("");
   const [touched, setTouched] = useState(false);
@@ -28,12 +30,12 @@ const TableForm = ({
 
     // Validation
     if (!tableNo.trim()) {
-      setError("شماره میز الزامی است");
+      setError("server.tableNumberRequired");
       return;
     }
 
     if (tableNo.trim().length < 1) {
-      setError("شماره میز باید حداقل ۱ کاراکتر باشد");
+      setError("manageTables.numberMin");
       return;
     }
 
@@ -63,9 +65,9 @@ const TableForm = ({
   const handleBlur = () => {
     setTouched(true);
     if (!tableNo.trim()) {
-      setError("شماره میز الزامی است");
+      setError("server.tableNumberRequired");
     } else if (tableNo.trim().length < 1) {
-      setError("شماره میز باید حداقل ۱ کاراکتر باشد");
+      setError("manageTables.numberMin");
     } else {
       setError("");
     }
@@ -77,12 +79,12 @@ const TableForm = ({
         {/* Header */}
         <div className="text-center mb-8">
           <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-            {isEditing ? "ویرایش میز" : "افزودن میز جدید"}
+            {isEditing ? t("manageTables.update") : t("manageTables.addNew")}
           </h2>
           <p className="text-gray-500 mt-2">
             {isEditing
-              ? "شماره میز را ویرایش کنید"
-              : "شماره میز جدید را وارد کنید"}
+              ? t("manageTables.editSubtitle")
+              : t("manageTables.addSubtitle")}
           </p>
         </div>
 
@@ -93,7 +95,7 @@ const TableForm = ({
               htmlFor="tableNo"
               className="block text-sm font-semibold text-gray-700 mb-2"
             >
-              شماره میز *
+              {t("manageTables.colNumber")} *
             </label>
             <div className="relative">
               <input
@@ -103,47 +105,47 @@ const TableForm = ({
                 value={tableNo}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                className={`w-full p-4 border-2 rounded-xl text-right transition-all duration-200 focus:ring-4 ${
+                className={`w-full p-4 border-2 rounded-xl text-start transition-all duration-200 focus:ring-4 ${
                   error
                     ? "border-red-500 focus:ring-red-500/20 bg-red-50"
                     : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 hover:border-gray-300"
                 }`}
-                placeholder="مثلاً: A-21, ۱۵, VIP-1"
+                placeholder={t("manageTables.numberPlaceholder")}
               />
             </div>
             {error && (
               <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                {error}
+                {t(error)}
               </p>
             )}
             <p className="mt-2 text-sm text-gray-500">
-              می‌توانید از اعداد، حروف و خط تیره استفاده کنید
+              {t("manageTables.numberHint")}
             </p>
           </div>
 
           {/* Buttons - At the end like MenuForm */}
-          <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 pt-6 border-t border-gray-200">
             <button
               type="button"
               onClick={handleCancel}
               disabled={isSubmitting}
-              className="px-8 py-3 text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl shadow-sm hover:bg-gray-200 transition-colors duration-200 border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 sm:px-8 py-3 text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl shadow-sm hover:bg-gray-200 transition-colors duration-200 border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              انصراف
+              {t("common.cancel")}
             </button>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-8 py-3 text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 sm:px-8 py-3 text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <span className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  در حال ثبت...
+                  {t("manageMenu.submitting")}
                 </span>
               ) : (
-                submitButtonText
+                submitButtonText || t("manageTables.create")
               )}
             </button>
           </div>

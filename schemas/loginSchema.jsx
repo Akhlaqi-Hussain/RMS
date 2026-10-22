@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-// Login schema
+// Login schema (messages are translation keys — shown with t())
 export const loginSchema = z.object({
-  username: z.string().min(4, "نام کاربری باید حداقل ۴ کاراکتر باشد"),
-  password: z.string().min(6, "رمز عبور باید حداقل ۶ کاراکتر باشد"),
+  username: z.string().min(4, "validation.usernameMin"),
+  password: z.string().min(6, "validation.passwordMin"),
 });
 
 // Validate single field
@@ -19,7 +19,7 @@ export const validateField = (schema, fieldName, value) => {
       );
       if (fieldError) return { isValid: false, error: fieldError.message };
     }
-    return { isValid: false, error: "خطای نامشخص" };
+    return { isValid: false, error: "common.unknownError" };
   }
 };
 
@@ -40,6 +40,6 @@ export const validateForm = (schema, formData) => {
       });
       return { isValid: false, errors };
     }
-    return { isValid: false, errors: { general: "خطای نامشخص" } };
+    return { isValid: false, errors: { general: "common.unknownError" } };
   }
 };

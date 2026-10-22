@@ -3,8 +3,10 @@ import { useEffect, useState, useRef } from "react";
 import StaffList from "./staffList";
 import StaffForm from "./staffForm";
 import toast from "react-hot-toast";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function StaffManagementPage() {
+  const { t, tServer } = useLanguage();
   const [staffMembers, setStaffMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -29,7 +31,7 @@ export default function StaffManagementPage() {
       setStaffMembers(data);
     } catch (err) {
       console.error("Error fetching staff members:", err.message);
-      toast.error("خطا در دریافت لیست پرسنل");
+      toast.error(t("server.staffListFailed"));
     } finally {
       setLoading(false);
     }
@@ -90,14 +92,14 @@ export default function StaffManagementPage() {
 
       // Show success message
       toast.success(
-        editingStaff ? "پرسنل با موفقیت ادیت شد" : "پرسنل با موفقیت اضافه شد"
+        editingStaff ? t("server.staffUpdated") : t("server.staffAdded")
       );
 
       await fetchStaffMembers(); // refresh list
       handleCloseForm();
     } catch (err) {
       console.error("Error saving staff member:", err);
-      toast.error(`خطا در ذخیره اطلاعات: ${err.message}`);
+      toast.error(t("manageStaff.saveFailed", { reason: tServer(err.message) }));
     } finally {
       setSubmitting(false);
     }
@@ -121,11 +123,11 @@ export default function StaffManagementPage() {
         throw new Error(errorData.error || "Failed to update status");
       }
 
-      toast.success(`پرسنل ${!currentStatus ? "فعال" : "غیرفعال"} شد`);
+      toast.success(!currentStatus ? t("server.staffActivated") : t("server.staffDeactivated"));
       await fetchStaffMembers(); // refresh list
     } catch (err) {
       console.error("Error updating staff status:", err);
-      toast.error(`خطا در تغییر وضعیت: ${err.message}`);
+      toast.error(t("manageStaff.statusFailed", { reason: tServer(err.message) }));
     }
   }
 
@@ -169,7 +171,7 @@ export default function StaffManagementPage() {
 
   // Delete staff member
   async function handleDeleteStaff(staffId) {
-    if (!confirm("آیا از حذف این پرسنل اطمینان دارید؟")) {
+    if (!confirm(t("manageStaff.deleteConfirm"))) {
       return;
     }
 
@@ -183,11 +185,11 @@ export default function StaffManagementPage() {
         throw new Error(errorData.error || "Failed to delete staff member");
       }
 
-      toast.success("پرسنل با موفقیت حذف شد");
+      toast.success(t("manageStaff.deleted"));
       await fetchStaffMembers(); // refresh list
     } catch (err) {
       console.error("Error deleting staff:", err);
-      toast.error(`خطا در حذف پرسنل: ${err.message}`);
+      toast.error(t("manageStaff.deleteFailed", { reason: tServer(err.message) }));
     }
   }
 
@@ -201,14 +203,14 @@ export default function StaffManagementPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">مدیریت پرسنل</h2>
+      <div className="flex flex-wrap gap-3 justify-between items-center">
+        <h2 className="text-xl font-bold">{t("manageStaff.title")}</h2>
         <button
           onClick={handleOpenAddForm}
           disabled={submitting}
           className="bg-[color:var(--color-primary)] text-white px-4 py-2 rounded-lg font-medium hover:bg-[color:var(--color-primary-light)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
         >
-          {submitting ? "در حال ثبت..." : "افزودن پرسنل جدید"}
+          {submitting ? t("manageMenu.submitting") : t("manageStaff.addNew")}
         </button>
       </div>
 
@@ -237,10 +239,10 @@ export default function StaffManagementPage() {
             resetTrigger={resetTrigger}
             submitButtonText={
               submitting
-                ? "در حال ثبت..."
+                ? t("manageMenu.submitting")
                 : editingStaff
-                ? "ادیت پرسنل"
-                : "ثبت پرسنل"
+                ? t("manageStaff.update")
+                : t("manageStaff.create")
             }
             isSubmitting={submitting}
           />

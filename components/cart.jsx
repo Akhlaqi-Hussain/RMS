@@ -11,10 +11,12 @@ import {
   FaShoppingBag,
   FaShoppingCart,
 } from "react-icons/fa";
+import { useLanguage } from "@/context/LanguageContext";
 
 const Cart = ({ isOpen, onClose }) => {
   const { cartItems, removeFromCart, updateQuantity } = useCart();
   const router = useRouter();
+  const { t, isRtl, formatMoney, formatNumber } = useLanguage();
 
   // Calculate total price
   const totalPrice = cartItems.reduce(
@@ -29,13 +31,15 @@ const Cart = ({ isOpen, onClose }) => {
 
   // Animation variants
   const overlayVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } };
+  // The drawer slides in from the end side: left in Dari/Pashto, right in English
+  const hiddenX = isRtl ? "-100%" : "100%";
   const cartVariants = {
-    hidden: { x: "-100%" },
+    hidden: { x: hiddenX },
     visible: {
       x: 0,
       transition: { type: "spring", damping: 25, stiffness: 120 },
     },
-    exit: { x: "-100%", transition: { duration: 0.3 } },
+    exit: { x: hiddenX, transition: { duration: 0.3 } },
   };
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -57,9 +61,9 @@ const Cart = ({ isOpen, onClose }) => {
             onClick={onClose}
           />
 
-          {/* Cart Drawer on the left */}
+          {/* Cart drawer on the end side */}
           <motion.div
-            className="fixed left-0 top-0 h-full w-full max-w-md bg-white shadow-xl z-50 flex flex-col"
+            className="fixed end-0 top-0 h-full w-full max-w-md bg-white shadow-xl z-50 flex flex-col"
             variants={cartVariants}
             initial="hidden"
             animate="visible"
@@ -69,13 +73,13 @@ const Cart = ({ isOpen, onClose }) => {
             <div className="flex justify-between items-center p-5 border-b border-gray-200">
               <div className="flex items-center">
                 <h2 className="text-xl font-bold text-[color:var(--color-text-primary)]">
-                  سبد خرید
+                  {t("cart.title")}
                 </h2>
               </div>
               <button
                 onClick={onClose}
                 className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1 rounded-full hover:bg-gray-100"
-                aria-label="بستن سبد خرید"
+                aria-label={t("cart.close")}
               >
                 <FaTimes size={20} />
               </button>
@@ -91,9 +95,9 @@ const Cart = ({ isOpen, onClose }) => {
                   transition={{ delay: 0.2 }}
                 >
                   <FaShoppingBag className="text-gray-300 text-5xl mb-4" />
-                  <p className="text-lg mb-2">سبد خرید شما خالی است</p>
+                  <p className="text-lg mb-2">{t("cart.empty")}</p>
                   <p className="text-sm text-gray-400 text-center">
-                    محصولات مورد علاقه خود را به سبد خرید اضافه کنید
+                    {t("cart.emptyHint")}
                   </p>
                 </motion.div>
               ) : (
@@ -114,7 +118,7 @@ const Cart = ({ isOpen, onClose }) => {
                             {item.name}
                           </h3>
                           <p className="text-[color:var(--color-primary)] font-medium text-sm mt-1">
-                            {item.price.toLocaleString()} ؋
+                            {formatMoney(item.price)}
                           </p>
 
                           <div className="flex items-center gap-2 mt-3">
@@ -125,13 +129,13 @@ const Cart = ({ isOpen, onClose }) => {
                               }
                               disabled={item.quantity <= 1}
                               className="w-7 h-7 flex items-center justify-center border border-gray-300 rounded-full text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed"
-                              aria-label="کاهش تعداد"
+                              aria-label={t("cart.decrease")}
                             >
                               <FaMinus size={12} />
                             </motion.button>
 
                             <span className="w-8 text-center font-medium">
-                              {item.quantity}
+                              {formatNumber(item.quantity)}
                             </span>
 
                             <motion.button
@@ -140,7 +144,7 @@ const Cart = ({ isOpen, onClose }) => {
                                 updateQuantity(item.id, item.quantity + 1)
                               }
                               className="w-7 h-7 flex items-center justify-center border border-gray-300 rounded-full text-gray-600"
-                              aria-label="افزایش تعداد"
+                              aria-label={t("cart.increase")}
                             >
                               <FaPlus size={12} />
                             </motion.button>
@@ -152,7 +156,7 @@ const Cart = ({ isOpen, onClose }) => {
                           whileTap={{ scale: 0.9 }}
                           onClick={() => removeFromCart(item.id)}
                           className="text-rose-500 hover:text-rose-700 p-2 transition-colors duration-200"
-                          aria-label="حذف از سبد خرید"
+                          aria-label={t("cart.remove")}
                         >
                           <FaTrash />
                         </motion.button>
@@ -172,9 +176,9 @@ const Cart = ({ isOpen, onClose }) => {
                 transition={{ delay: 0.3 }}
               >
                 <div className="flex justify-between items-center mb-4">
-                  <span className="text-gray-600">جمع کل:</span>
+                  <span className="text-gray-600">{t("cart.total")}</span>
                   <span className="text-xl font-bold text-[color:var(--color-primary)]">
-                    {totalPrice.toLocaleString()} افغانی
+                    {formatMoney(totalPrice)}
                   </span>
                 </div>
 
@@ -184,7 +188,7 @@ const Cart = ({ isOpen, onClose }) => {
                   onClick={handleCheckout}
                   className="w-full bg-[color:var(--color-primary)] text-white py-3 rounded-xl font-medium hover:bg-[color:var(--color-primary-light)] transition-colors duration-200 shadow-md"
                 >
-                  ادامه خرید
+                  {t("cart.checkout")}
                 </motion.button>
               </motion.div>
             )}

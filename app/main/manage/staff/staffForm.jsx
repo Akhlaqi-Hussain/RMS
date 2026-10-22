@@ -9,6 +9,7 @@ import {
   FaUserTag,
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLanguage } from "@/context/LanguageContext";
 import {
   staffSchema,
   staffEditSchema,
@@ -19,7 +20,7 @@ import {
 const StaffForm = ({
   initialData = {},
   onSubmit,
-  submitButtonText = "ثبت",
+  submitButtonText,
   isEditing = false,
   onCancel,
   resetTrigger,
@@ -40,12 +41,13 @@ const StaffForm = ({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const validationSchema = isEditing ? staffEditSchema : staffSchema;
+  const { t } = useLanguage();
 
   const roles = [
-    { value: "manager", label: "مدیر" },
-    { value: "chef", label: "آشپز" },
-    { value: "waiter", label: "پیشخدمت" },
-    { value: "cashier", label: "صندوقدار" },
+    { value: "manager", label: t("roles.manager") },
+    { value: "chef", label: t("roles.chef") },
+    { value: "waiter", label: t("roles.waiter") },
+    { value: "cashier", label: t("roles.cashier") },
   ];
 
   // ✅ Populate form when editing or reset
@@ -127,7 +129,7 @@ const StaffForm = ({
       transition={{ duration: 0.4 }}
       className="max-w-2xl mx-auto"
     >
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 md:p-8">
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 md:p-8">
         {/* Header */}
         <div className="text-center mb-8">
           <motion.h2
@@ -135,12 +137,12 @@ const StaffForm = ({
             animate={{ opacity: 1, y: 0 }}
             className="text-2xl md:text-3xl font-bold text-gray-800"
           >
-            {isEditing ? "ویرایش پرسنل" : "افزودن پرسنل جدید"}
+            {isEditing ? t("manageStaff.update") : t("manageStaff.addNew")}
           </motion.h2>
           <p className="text-gray-500 mt-2">
             {isEditing
-              ? `در حال ویرایش ${formData.firstName} ${formData.lastName}`
-              : "اطلاعات پرسنل جدید را وارد کنید"}
+              ? t("manageStaff.editing", { name: `${formData.firstName} ${formData.lastName}` })
+              : t("manageStaff.addSubtitle")}
           </p>
         </div>
 
@@ -159,52 +161,52 @@ const StaffForm = ({
             {/* First Name */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                نام *
+                {t("manageStaff.firstName")} *
               </label>
               <div className="relative">
-                <FaUser className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                <FaUser className="absolute start-4 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  className={`w-full p-4 pr-12 border-2 rounded-xl ${
+                  className={`w-full p-4 ps-12 border-2 rounded-xl ${
                     errors.firstName
                       ? "border-red-500 bg-red-50"
                       : "border-gray-200 focus:border-blue-500"
                   }`}
-                  placeholder="نام را وارد کنید"
+                  placeholder={t("manageStaff.firstNamePlaceholder")}
                 />
               </div>
               {errors.firstName && (
-                <p className="mt-2 text-sm text-red-600">{errors.firstName}</p>
+                <p className="mt-2 text-sm text-red-600">{t(errors.firstName)}</p>
               )}
             </div>
 
             {/* Last Name */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                نام خانوادگی *
+                {t("manageStaff.lastName")} *
               </label>
               <div className="relative">
-                <FaUser className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                <FaUser className="absolute start-4 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  className={`w-full p-4 pr-12 border-2 rounded-xl ${
+                  className={`w-full p-4 ps-12 border-2 rounded-xl ${
                     errors.lastName
                       ? "border-red-500 bg-red-50"
                       : "border-gray-200 focus:border-blue-500"
                   }`}
-                  placeholder="نام خانوادگی را وارد کنید"
+                  placeholder={t("manageStaff.lastNamePlaceholder")}
                 />
               </div>
               {errors.lastName && (
-                <p className="mt-2 text-sm text-red-600">{errors.lastName}</p>
+                <p className="mt-2 text-sm text-red-600">{t(errors.lastName)}</p>
               )}
             </div>
           </motion.div>
@@ -212,22 +214,22 @@ const StaffForm = ({
           {/* Role */}
           <motion.div variants={itemVariants}>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              نقش *
+              {t("manageStaff.role")} *
             </label>
             <div className="relative">
-              <FaUserTag className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <FaUserTag className="absolute start-4 top-1/2 -translate-y-1/2 text-gray-400" />
               <select
                 name="role"
                 value={formData.role}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                className={`w-full p-4 pr-12 border-2 rounded-xl ${
+                className={`w-full p-4 ps-12 border-2 rounded-xl ${
                   errors.role
                     ? "border-red-500 bg-red-50"
                     : "border-gray-200 focus:border-blue-500"
                 }`}
               >
-                <option value="">انتخاب نقش</option>
+                <option value="">{t("manageStaff.chooseRole")}</option>
                 {roles.map((r) => (
                   <option key={r.value} value={r.value}>
                     {r.label}
@@ -236,7 +238,7 @@ const StaffForm = ({
               </select>
             </div>
             {errors.role && (
-              <p className="mt-2 text-sm text-red-600">{errors.role}</p>
+              <p className="mt-2 text-sm text-red-600">{t(errors.role)}</p>
             )}
           </motion.div>
 
@@ -248,17 +250,17 @@ const StaffForm = ({
             {/* Phone */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                تلفن *
+                {t("manageStaff.phone")} *
               </label>
               <div className="relative">
-                <FaPhone className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                <FaPhone className="absolute start-4 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="tel"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  className={`w-full p-4 pr-12 border-2 rounded-xl ${
+                  className={`w-full p-4 ps-12 border-2 rounded-xl ${
                     errors.phone
                       ? "border-red-500 bg-red-50"
                       : "border-gray-200 focus:border-blue-500"
@@ -267,33 +269,33 @@ const StaffForm = ({
                 />
               </div>
               {errors.phone && (
-                <p className="mt-2 text-sm text-red-600">{errors.phone}</p>
+                <p className="mt-2 text-sm text-red-600">{t(errors.phone)}</p>
               )}
             </div>
 
             {/* Username */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                نام کاربری *
+                {t("login.username")} *
               </label>
               <div className="relative">
-                <FaUser className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                <FaUser className="absolute start-4 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   name="username"
                   value={formData.username}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  className={`w-full p-4 pr-12 border-2 rounded-xl ${
+                  className={`w-full p-4 ps-12 border-2 rounded-xl ${
                     errors.username
                       ? "border-red-500 bg-red-50"
                       : "border-gray-200 focus:border-blue-500"
                   }`}
-                  placeholder="نام کاربری را وارد کنید"
+                  placeholder={t("manageStaff.usernamePlaceholder")}
                 />
               </div>
               {errors.username && (
-                <p className="mt-2 text-sm text-red-600">{errors.username}</p>
+                <p className="mt-2 text-sm text-red-600">{t(errors.username)}</p>
               )}
             </div>
           </motion.div>
@@ -301,10 +303,10 @@ const StaffForm = ({
           {/* Password */}
           <motion.div variants={itemVariants}>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              رمز عبور {isEditing ? "(اختیاری)" : "*"}
+              {t("login.password")} {isEditing ? t("manageMenu.optional") : "*"}
             </label>
             <div className="relative">
-              <FaKey className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <FaKey className="absolute start-4 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
@@ -313,10 +315,10 @@ const StaffForm = ({
                 onBlur={handleBlur}
                 placeholder={
                   isEditing
-                    ? "خالی بگذارید اگر نمی‌خواهید تغییر دهید"
-                    : "رمز عبور را وارد کنید"
+                    ? t("manageStaff.passwordKeep")
+                    : t("login.passwordPlaceholder")
                 }
-                className={`w-full p-4 pr-12 border-2 rounded-xl ${
+                className={`w-full p-4 ps-12 border-2 rounded-xl ${
                   errors.password
                     ? "border-red-500 bg-red-50"
                     : "border-gray-200 focus:border-blue-500"
@@ -325,31 +327,31 @@ const StaffForm = ({
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-500"
               >
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
             {errors.password && (
-              <p className="mt-2 text-sm text-red-600">{errors.password}</p>
+              <p className="mt-2 text-sm text-red-600">{t(errors.password)}</p>
             )}
           </motion.div>
 
           {/* Confirm Password (only for add) */}
           <motion.div variants={itemVariants}>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              تکرار رمز عبور *
+              {t("manageStaff.confirmPassword")} *
             </label>
             <div className="relative">
-              <FaKey className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <FaKey className="absolute start-4 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type={showConfirmPassword ? "text" : "password"}
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                placeholder="تکرار رمز عبور را وارد کنید"
-                className={`w-full p-4 pr-12 border-2 rounded-xl ${
+                placeholder={t("manageStaff.confirmPasswordPlaceholder")}
+                className={`w-full p-4 ps-12 border-2 rounded-xl ${
                   errors.confirmPassword
                     ? "border-red-500 bg-red-50"
                     : "border-gray-200 focus:border-blue-500"
@@ -358,34 +360,34 @@ const StaffForm = ({
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-500"
               >
                 {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
             {errors.confirmPassword && (
               <p className="mt-2 text-sm text-red-600">
-                {errors.confirmPassword}
+                {t(errors.confirmPassword)}
               </p>
             )}
           </motion.div>
 
           {/* Buttons */}
-          <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 pt-6 border-t border-gray-200">
             {onCancel && (
               <button
                 type="button"
                 onClick={onCancel}
                 className="px-6 py-3 text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl border border-gray-300 hover:bg-gray-200"
               >
-                انصراف
+                {t("common.cancel")}
               </button>
             )}
             <button
               type="submit"
               className="px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl hover:from-blue-600 hover:to-blue-700"
             >
-              {submitButtonText}
+              {submitButtonText || t("manageStaff.create")}
             </button>
           </div>
         </motion.form>

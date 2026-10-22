@@ -2,8 +2,11 @@
 import React from "react";
 import Login from "@/components/login";
 import toast from "react-hot-toast";
+import { useLanguage } from "@/context/LanguageContext";
 
 const LoginPage = () => {
+  const { t, tServer } = useLanguage();
+
   const handleLogin = async (formData) => {
     try {
       const res = await fetch("/api/login", {
@@ -17,19 +20,19 @@ const LoginPage = () => {
 
       if (!res.ok || !data.success) {
         // Show relevant error message from backend if available
-        const message =
-          data?.message ||
-          "ورود ناموفق بود. لطفاً نام کاربری و رمز عبور خود را بررسی کنید.";
+        const message = data?.message
+          ? tServer(data.message)
+          : t("login.failed");
         toast.error(message);
         console.error("Login failed:", message);
         return;
       }
 
-      toast.success("ورود موفقیت‌آمیز بود!");
+      toast.success(t("login.success"));
       window.location.href = "/main/dashboard"; // Redirect to dashboard or protected page
     } catch (err) {
       console.error("Login error:", err);
-      toast.error("خطایی در سرور رخ داد. لطفاً دوباره تلاش کنید.");
+      toast.error(t("common.networkError"));
     }
   };
 

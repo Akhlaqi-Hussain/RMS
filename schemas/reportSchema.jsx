@@ -1,25 +1,27 @@
 // @/schemas/reportSchema.js
 import { z } from "zod";
 
+// I18N-01: error messages are translation keys; forms show them with t().
+
 // Report schema
 export const reportSchema = z
   .object({
     reportType: z.enum(["sales", "products", "financial", "orders"], {
-      errorMap: () => ({ message: "نوع گزارش معتبر نیست" }),
+      errorMap: () => ({ message: "validation.reportType" }),
     }),
     startDate: z
       .string()
-      .min(1, "تاریخ شروع الزامی است")
-      .regex(/^\d{4}-\d{2}-\d{2}$/, "تاریخ شروع باید به شکل YYYY-MM-DD باشد"),
+      .min(1, "validation.startDateRequired")
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "validation.startDateFormat"),
     endDate: z
       .string()
-      .min(1, "تاریخ پایان الزامی است")
-      .regex(/^\d{4}-\d{2}-\d{2}$/, "تاریخ پایان باید به شکل YYYY-MM-DD باشد"),
+      .min(1, "validation.endDateRequired")
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "validation.endDateFormat"),
     format: z.enum(["json", "csv", "xlsx"]).optional(),
     includeDetails: z.boolean().optional(),
   })
   .refine((data) => new Date(data.startDate) <= new Date(data.endDate), {
-    message: "تاریخ پایان نباید قبل از تاریخ شروع باشد",
+    message: "validation.endBeforeStart",
     path: ["endDate"],
   });
 
@@ -36,7 +38,7 @@ export const validateField = (schema, fieldName, value) => {
       );
       if (fieldError) return { isValid: false, error: fieldError.message };
     }
-    return { isValid: false, error: "خطای نامشخص" };
+    return { isValid: false, error: "common.unknownError" };
   }
 };
 
@@ -57,6 +59,6 @@ export const validateForm = (schema, formData) => {
       });
       return { isValid: false, errors };
     }
-    return { isValid: false, errors: { general: "خطای نامشخص" } };
+    return { isValid: false, errors: { general: "common.unknownError" } };
   }
 };

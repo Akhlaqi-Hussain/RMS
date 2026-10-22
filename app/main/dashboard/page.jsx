@@ -9,8 +9,10 @@ import {
   FaTag,
   FaTicketAlt,
 } from "react-icons/fa";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function Dashboard() {
+  const { t, formatMoney, formatNumber, formatTime } = useLanguage();
   const [stats, setStats] = useState({
     totalRevenue: 0,
     totalOrders: 0,
@@ -46,10 +48,7 @@ export default function Dashboard() {
           items: Math.round(order.total_amount / 100),
           amount: order.total_amount,
           status: order.status === "closed" ? "completed" : "pending",
-          time: new Date(order.created_at).toLocaleTimeString("fa-IR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+          time: order.created_at,
         })) || []
       );
 
@@ -67,12 +66,12 @@ export default function Dashboard() {
   };
 
   const StatCard = ({ title, value, icon }) => (
-    <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-all duration-300">
+    <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-md transition-all duration-300">
       <div className="flex items-center justify-between">
         <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
           {icon}
         </div>
-        <div className="text-right">
+        <div className="text-end">
           <p className="text-sm font-medium text-gray-600">{title}</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
         </div>
@@ -84,15 +83,15 @@ export default function Dashboard() {
     const statusConfig = {
       completed: {
         color: "bg-green-50 text-green-700 border-green-200",
-        text: "تکمیل شده",
+        text: t("dashboard.statusCompleted"),
       },
       preparing: {
         color: "bg-yellow-50 text-yellow-700 border-yellow-200",
-        text: "در حال آماده سازی",
+        text: t("dashboard.statusPreparing"),
       },
       pending: {
         color: "bg-red-50 text-red-700 border-red-200",
-        text: "در انتظار",
+        text: t("dashboard.statusPending"),
       },
     };
 
@@ -107,71 +106,71 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen p-4 md:p-6" dir="rtl">
+    <div className="min-h-screen p-1 sm:p-4 md:p-6">
       {/* Header */}
       <div className="mb-8 text-center">
         <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-4">
-          داشبورد
+          {t("dashboard.title")}
         </h1>
-        <p className="text-gray-600 mt-2">بررسی عملکرد و آمار رستوران</p>
+        <p className="text-gray-600 mt-2">{t("dashboard.subtitle")}</p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
         <StatCard
-          title="درآمد کل"
-          value={stats.totalRevenue}
+          title={t("dashboard.totalRevenue")}
+          value={formatMoney(stats.totalRevenue)}
           icon={<FaMoneyBillWave className="text-blue-600" size={20} />}
         />
         <StatCard
-          title="درآمد امروز"
-          value={stats.todayRevenue}
+          title={t("dashboard.todayRevenue")}
+          value={formatMoney(stats.todayRevenue)}
           icon={<FaChartLine className="text-purple-600" size={20} />}
         />
         <StatCard
-          title="تخیف های امروز"
-          value={stats.todayDiscount}
+          title={t("dashboard.todayDiscounts")}
+          value={formatMoney(stats.todayDiscount)}
           icon={<FaTicketAlt className="text-orange-600" size={20} />}
         />
         <StatCard
-          title="سفارشات امروز"
-          value={stats.totalOrders}
+          title={t("dashboard.todayOrders")}
+          value={formatNumber(stats.totalOrders)}
           icon={<FaShoppingCart className="text-green-600" size={20} />}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Orders */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-gray-900">سفارشات اخیر</h2>
+            <h2 className="text-lg font-bold text-gray-900">{t("dashboard.recentOrders")}</h2>
             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
           </div>
           <div className="space-y-3">
             {recentOrders.map((order) => (
               <div
                 key={order.id}
-                className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                className="flex items-center justify-between gap-2 p-3 sm:p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors duration-200"
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-4 min-w-0">
                   <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
                     <span className="text-blue-600 font-bold text-sm">
                       {order.table}
                     </span>
                   </div>
-                  <div className="text-right">
+                  <div className="text-end">
                     <p className="font-medium text-gray-900">
-                      میز {order.table}
+                      {t("common.tableNo", { no: order.table })}
                     </p>
-                    <p className="text-sm text-gray-500">{order.items} آیتم</p>
+                    <p className="text-sm text-gray-500">{t("dashboard.itemsCount", { count: formatNumber(order.items) })}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
+                <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                  <div className="text-end">
                     <p className="font-bold text-gray-900">
-                      {order.amount.toLocaleString("fa-IR")} ؋
+                      {formatMoney(order.amount)}
                     </p>
-                    <p className="text-sm text-gray-500">{order.time}</p>
+                    <p className="text-sm text-gray-500">{formatTime(order.time)}</p>
                   </div>
                   <StatusBadge status={order.status} />
                 </div>
@@ -181,10 +180,10 @@ export default function Dashboard() {
         </div>
 
         {/* Top Menu Items */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-gray-900">
-              محبوب ترین آیتم ها
+              {t("dashboard.topItems")}
             </h2>
             <FaStar className="text-yellow-500" size={16} />
           </div>
@@ -192,9 +191,9 @@ export default function Dashboard() {
             {topMenuItems.map((item, index) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                className="flex items-center justify-between gap-2 p-3 sm:p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors duration-200"
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-4 min-w-0">
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center ${
                       index === 0
@@ -220,13 +219,13 @@ export default function Dashboard() {
                       {index + 1}
                     </span>
                   </div>
-                  <div className="text-right">
+                  <div className="text-end">
                     <p className="font-medium text-gray-900">{item.name}</p>
-                    <p className="text-sm text-gray-500">{item.orders} سفارش</p>
+                    <p className="text-sm text-gray-500">{t("dashboard.ordersCount", { count: formatNumber(item.orders) })}</p>
                   </div>
                 </div>
                 <p className="font-bold text-gray-900">
-                  {item.revenue.toLocaleString("fa-IR")} ؋
+                  {formatMoney(item.revenue)}
                 </p>
               </div>
             ))}

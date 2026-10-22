@@ -3,8 +3,10 @@ import { useEffect, useState, useRef } from "react";
 import TableList from "./tableList";
 import TableForm from "./tableForm";
 import toast from "react-hot-toast";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function TableManagementPage() {
+  const { t } = useLanguage();
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -89,14 +91,14 @@ export default function TableManagementPage() {
 
       // Show success message
       toast.success(
-        editingTable ? "میز با موفقیت ویرایش شد" : "میز با موفقیت اضافه شد"
+        editingTable ? t("server.tableUpdated") : t("manageTables.added")
       );
 
       await fetchTables(); // refresh list
       handleCloseForm();
     } catch (err) {
       console.error("Error saving table:", err);
-      toast.error(`خطا در ذخیره میز`);
+      toast.error(t("manageTables.saveFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -120,17 +122,17 @@ export default function TableManagementPage() {
         throw new Error(errorData.error || "Failed to update status");
       }
 
-      toast.success(newStatus ? "میز فعال شد" : "میز غیرفعال شد");
+      toast.success(newStatus ? t("server.tableActivated") : t("server.tableDeactivated"));
       await fetchTables(); // refresh list
     } catch (err) {
       console.error("Error updating status:", err);
-      toast.error("خطا در تغییر وضعیت میز");
+      toast.error(t("server.statusUpdateFailed"));
     }
   }
 
   // Handle delete table - CORRECT: Using DELETE method
   async function handleDeleteTable(tableId) {
-    if (!confirm("آیا از حذف این میز اطمینان دارید؟")) {
+    if (!confirm(t("manageTables.deleteConfirm"))) {
       return;
     }
 
@@ -144,11 +146,11 @@ export default function TableManagementPage() {
         throw new Error(errorData.error || "Failed to delete table");
       }
 
-      toast.success("میز با موفقیت حذف شد");
+      toast.success(t("server.tableDeleted"));
       await fetchTables(); // refresh list
     } catch (err) {
       console.error("Error deleting table:", err);
-      toast.error("خطا در حذف میز");
+      toast.error(t("server.tableDeleteFailed"));
     }
   }
 
@@ -187,14 +189,14 @@ export default function TableManagementPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">مدیریت میزها</h2>
+      <div className="flex flex-wrap gap-3 justify-between items-center">
+        <h2 className="text-xl font-bold">{t("manageTables.title")}</h2>
         <button
           onClick={handleOpenAddForm}
           disabled={submitting}
           className="bg-[color:var(--color-primary)] text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity duration-200 disabled:opacity-50"
         >
-          {submitting ? "در حال ثبت..." : "افزودن میز جدید"}
+          {submitting ? t("manageMenu.submitting") : t("manageTables.addNew")}
         </button>
       </div>
 
@@ -223,10 +225,10 @@ export default function TableManagementPage() {
             resetTrigger={resetTrigger}
             submitButtonText={
               submitting
-                ? "در حال ثبت..."
+                ? t("manageMenu.submitting")
                 : editingTable
-                ? "ویرایش میز"
-                : "ثبت میز"
+                ? t("manageTables.update")
+                : t("manageTables.create")
             }
             isSubmitting={submitting}
           />

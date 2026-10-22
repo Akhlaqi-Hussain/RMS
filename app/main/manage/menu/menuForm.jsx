@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLanguage } from "@/context/LanguageContext";
 import {
   menuSchema,
   menuEditSchema,
@@ -11,7 +12,7 @@ import {
 const MenuForm = ({
   initialData = {},
   onSubmit,
-  submitButtonText = "ثبت آیتم",
+  submitButtonText,
   isEditing = false,
   onCancel,
   resetTrigger,
@@ -27,6 +28,7 @@ const MenuForm = ({
   });
 
   const [errors, setErrors] = useState({});
+  const { t, formatNumber } = useLanguage();
   const [touched, setTouched] = useState({});
   const [categories, setCategories] = useState([]);
   const [newCategory, setNewCategory] = useState("");
@@ -171,7 +173,7 @@ const MenuForm = ({
       transition={{ duration: 0.4 }}
       className="max-w-2xl mx-auto"
     >
-      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-md">
+      <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-md">
         {/* Header */}
         <div className="text-center mb-8">
           <motion.h2
@@ -180,7 +182,7 @@ const MenuForm = ({
             transition={{ delay: 0.1 }}
             className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent"
           >
-            {isEditing ? "ادیت آیتم منو" : "افزودن آیتم جدید"}
+            {isEditing ? t("manageMenu.editTitle") : t("manageMenu.addNew")}
           </motion.h2>
           <motion.p
             initial={{ opacity: 0 }}
@@ -189,8 +191,8 @@ const MenuForm = ({
             className="text-gray-500 mt-2"
           >
             {isEditing
-              ? "اطلاعات آیتم را ادیت کنید"
-              : "اطلاعات آیتم جدید را وارد کنید"}
+              ? t("manageMenu.editSubtitle")
+              : t("manageMenu.addSubtitle")}
           </motion.p>
         </div>
 
@@ -205,7 +207,7 @@ const MenuForm = ({
               htmlFor="name"
               className="block text-sm font-semibold text-gray-700 mb-2"
             >
-              نام آیتم *
+              {t("manageMenu.fieldName")} *
             </label>
             <input
               type="text"
@@ -214,12 +216,12 @@ const MenuForm = ({
               value={formData.name}
               onChange={handleChange}
               onBlur={handleBlur}
-              className={`w-full p-4 border-2 rounded-xl text-right transition-all duration-200 focus:ring-4 ${
+              className={`w-full p-4 border-2 rounded-xl text-start transition-all duration-200 focus:ring-4 ${
                 errors.name
                   ? "border-red-500 focus:ring-red-500/20 bg-red-50"
                   : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 hover:border-gray-300"
               }`}
-              placeholder="مثلاً: پیتزا مخصوص"
+              placeholder={t("manageMenu.namePlaceholder")}
             />
             <AnimatePresence>
               {errors.name && (
@@ -229,7 +231,7 @@ const MenuForm = ({
                   exit={{ opacity: 0, height: 0 }}
                   className="mt-2 text-sm text-red-600 flex items-center gap-1"
                 >
-                  {errors.name}
+                  {t(errors.name)}
                 </motion.p>
               )}
             </AnimatePresence>
@@ -245,7 +247,7 @@ const MenuForm = ({
               htmlFor="description"
               className="block text-sm font-semibold text-gray-700 mb-2"
             >
-              توضیحات *
+              {t("manageMenu.fieldDescription")} *
             </label>
             <textarea
               id="description"
@@ -254,12 +256,12 @@ const MenuForm = ({
               value={formData.description}
               onChange={handleChange}
               onBlur={handleBlur}
-              className={`w-full p-4 border-2 rounded-xl text-right transition-all duration-200 focus:ring-4 resize-none ${
+              className={`w-full p-4 border-2 rounded-xl text-start transition-all duration-200 focus:ring-4 resize-none ${
                 errors.description
                   ? "border-red-500 focus:ring-red-500/20 bg-red-50"
                   : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 hover:border-gray-300"
               }`}
-              placeholder="توضیح کوتاه درباره آیتم..."
+              placeholder={t("manageMenu.descriptionPlaceholder")}
             />
             <AnimatePresence>
               {errors.description && (
@@ -269,7 +271,7 @@ const MenuForm = ({
                   exit={{ opacity: 0, height: 0 }}
                   className="mt-2 text-sm text-red-600 flex items-center gap-1"
                 >
-                  {errors.description}
+                  {t(errors.description)}
                 </motion.p>
               )}
             </AnimatePresence>
@@ -288,7 +290,7 @@ const MenuForm = ({
                 htmlFor="category"
                 className="block text-sm font-semibold text-gray-700"
               >
-                دسته‌بندی *
+                {t("manageMenu.fieldCategory")} *
               </label>
               <div className="space-y-3">
                 <select
@@ -297,13 +299,13 @@ const MenuForm = ({
                   value={formData.category}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  className={`w-full p-4 border-2 rounded-xl text-right transition-all duration-200 focus:ring-4 ${
+                  className={`w-full p-4 border-2 rounded-xl text-start transition-all duration-200 focus:ring-4 ${
                     errors.category
                       ? "border-red-500 focus:ring-red-500/20 bg-red-50"
                       : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 hover:border-gray-300"
                   }`}
                 >
-                  <option value="">انتخاب دسته‌بندی</option>
+                  <option value="">{t("manageMenu.chooseCategory")}</option>
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.name}
@@ -318,7 +320,7 @@ const MenuForm = ({
                   className="w-full p-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   <span>+</span>
-                  افزودن دسته‌بندی جدید
+                  {t("manageMenu.addCategory")}
                 </button>
 
                 {/* Add Category Input */}
@@ -332,10 +334,10 @@ const MenuForm = ({
                     >
                       <input
                         type="text"
-                        placeholder="نام دسته‌بندی جدید"
+                        placeholder={t("manageMenu.newCategoryPlaceholder")}
                         value={newCategory}
                         onChange={(e) => setNewCategory(e.target.value)}
-                        className="flex-1 p-3 border-2 border-gray-200 rounded-xl text-right focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200"
+                        className="flex-1 min-w-0 p-3 border-2 border-gray-200 rounded-xl text-start focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200"
                       />
                       <motion.button
                         type="button"
@@ -344,7 +346,7 @@ const MenuForm = ({
                         whileTap={{ scale: 0.95 }}
                         className="px-4 py-3 bg-green-500 text-white rounded-xl shadow-lg hover:bg-green-600 transition-colors duration-200"
                       >
-                        افزودن
+                        {t("common.add")}
                       </motion.button>
                     </motion.div>
                   )}
@@ -358,7 +360,7 @@ const MenuForm = ({
                     exit={{ opacity: 0, height: 0 }}
                     className="text-sm text-red-600 flex items-center gap-1"
                   >
-                    {errors.category}
+                    {t(errors.category)}
                   </motion.p>
                 )}
               </AnimatePresence>
@@ -370,7 +372,7 @@ const MenuForm = ({
                 htmlFor="price"
                 className="block text-sm font-semibold text-gray-700 mb-2"
               >
-                قیمت (افغانی) *
+                {t("manageMenu.fieldPrice")} *
               </label>
               <div className="relative">
                 <input
@@ -380,15 +382,15 @@ const MenuForm = ({
                   value={formData.price}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  className={`w-full p-4 border-2 rounded-xl text-right transition-all duration-200 focus:ring-4 pr-12 ${
+                  className={`w-full p-4 border-2 rounded-xl text-start transition-all duration-200 focus:ring-4 pe-12 ${
                     errors.price
                       ? "border-red-500 focus:ring-red-500/20 bg-red-50"
                       : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 hover:border-gray-300"
                   }`}
-                  placeholder="۰"
+                  placeholder={formatNumber(0)}
                 />
-                <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
-                  ؋
+                <span className="absolute end-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
+                  {t("common.currencySign")}
                 </span>
               </div>
               <AnimatePresence>
@@ -399,7 +401,7 @@ const MenuForm = ({
                     exit={{ opacity: 0, height: 0 }}
                     className="mt-2 text-sm text-red-600 flex items-center gap-1"
                   >
-                    {errors.price}
+                    {t(errors.price)}
                   </motion.p>
                 )}
               </AnimatePresence>
@@ -416,9 +418,9 @@ const MenuForm = ({
               htmlFor="image"
               className="block text-sm font-semibold text-gray-700 mb-2"
             >
-              تصویر {isEditing && "(اختیاری)"}
+              {t("manageMenu.fieldImage")} {isEditing && t("manageMenu.optional")}
             </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center transition-all duration-200 hover:border-gray-400 hover:bg-gray-50">
+            <div className="border-2 border-dashed border-gray-300 rounded-2xl p-4 sm:p-6 text-center transition-all duration-200 hover:border-gray-400 hover:bg-gray-50">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -431,10 +433,10 @@ const MenuForm = ({
               <label htmlFor="image" className="cursor-pointer block">
                 <div className="text-gray-400 mb-2 text-4xl">📷</div>
                 <p className="text-gray-600 font-medium">
-                  برای آپلود تصویر کلیک کنید
+                  {t("manageMenu.uploadHint")}
                 </p>
                 <p className="text-gray-400 text-sm mt-1">
-                  فرمت‌های مجاز: JPG, PNG, WebP
+                  {t("manageMenu.allowedFormats")}
                 </p>
               </label>
             </div>
@@ -446,7 +448,7 @@ const MenuForm = ({
                   exit={{ opacity: 0, height: 0 }}
                   className="mt-2 text-sm text-red-600 flex items-center gap-1"
                 >
-                  {errors.image}
+                  {t(errors.image)}
                 </motion.p>
               )}
             </AnimatePresence>
@@ -457,25 +459,25 @@ const MenuForm = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
-            className="flex justify-end gap-4 pt-6 border-t border-gray-200"
+            className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 pt-6 border-t border-gray-200"
           >
             <motion.button
               type="button"
               onClick={handleCancel}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="px-8 py-3 text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl shadow-sm hover:bg-gray-200 transition-colors duration-200 border border-gray-300"
+              className="px-6 sm:px-8 py-3 text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl shadow-sm hover:bg-gray-200 transition-colors duration-200 border border-gray-300"
             >
-              انصراف
+              {t("common.cancel")}
             </motion.button>
 
             <motion.button
               type="submit"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="px-8 py-3 text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200"
+              className="px-6 sm:px-8 py-3 text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200"
             >
-              {submitButtonText}
+              {submitButtonText || t("manageMenu.create")}
             </motion.button>
           </motion.div>
         </form>
