@@ -1,2 +1,4 @@
 # Keep Linux line endings for shell scripts (Docker runs them on Linux)
 *.sh text eol=lf
+# Windows command files need Windows line endings
+*.cmd text eol=crlf

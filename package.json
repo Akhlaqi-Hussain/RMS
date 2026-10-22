@@ -12,7 +12,9 @@
     "backup": "node scripts/backup.mjs",
     "backup:list": "node scripts/backup.mjs --list",
     "backup:verify": "node scripts/backup.mjs --verify",
-    "restore": "node scripts/restore.mjs"
+    "restore": "node scripts/restore.mjs",
+    "db:setup-prod": "node scripts/setup-production-db.mjs",
+    "create-manager": "node scripts/create-manager.mjs"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
