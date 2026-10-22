@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 
 const TableForm = ({
@@ -12,16 +12,20 @@ const TableForm = ({
   isSubmitting = false,
 }) => {
   const { t } = useLanguage();
-  const [tableNo, setTableNo] = useState("");
+  const [tableNo, setTableNo] = useState(initialData.table_no || "");
   const [error, setError] = useState("");
   const [touched, setTouched] = useState(false);
 
-  // Reset form when resetTrigger changes or initialData changes
-  useEffect(() => {
+  // Reset form when resetTrigger changes or initialData changes.
+  // LINT-1: done while rendering (React's "adjust state when a prop changes"
+  // pattern) instead of in an effect; the result on screen is the same.
+  const [prevProps, setPrevProps] = useState({ initialData, resetTrigger });
+  if (prevProps.initialData !== initialData || prevProps.resetTrigger !== resetTrigger) {
+    setPrevProps({ initialData, resetTrigger });
     setTableNo(initialData.table_no || "");
     setError("");
     setTouched(false);
-  }, [initialData, resetTrigger]);
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault();

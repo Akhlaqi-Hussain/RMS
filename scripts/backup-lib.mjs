@@ -94,6 +94,9 @@ function sqlCommand(cfg, tool, args) {
   };
 }
 
+// PROD-1: the same command builder for other admin scripts (setup-production-db).
+export const sqlCommandFor = (cfg, tool, args) => sqlCommand(cfg, tool, args);
+
 export function run(cmd, args, { cwd = ROOT, env = process.env, input, stdout } = {}) {
   return new Promise((resolvePromise, reject) => {
     const child = spawn(cmd, args, { cwd, env, stdio: ["pipe", stdout ? "pipe" : "pipe", "pipe"], windowsHide: true });

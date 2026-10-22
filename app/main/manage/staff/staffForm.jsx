@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   FaEye,
   FaEyeSlash,
@@ -17,6 +17,30 @@ import {
   validateForm,
 } from "@/schemas/staffSchema";
 
+// Starting values of the form: the staff member's data when editing, empty for a new one.
+function staffFormValues(initialData, isEditing) {
+  if (isEditing && initialData) {
+    return {
+      firstName: initialData.first_name || initialData.firstName || "",
+      lastName: initialData.last_name || initialData.lastName || "",
+      role: initialData.role || "",
+      phone: initialData.phone || "",
+      username: initialData.username || "",
+      password: "", // Always empty for security
+      confirmPassword: "", // Always empty for security
+    };
+  }
+  return {
+    firstName: "",
+    lastName: "",
+    role: "",
+    phone: "",
+    username: "",
+    password: "",
+    confirmPassword: "",
+  };
+}
+
 const StaffForm = ({
   initialData = {},
   onSubmit,
@@ -25,15 +49,7 @@ const StaffForm = ({
   onCancel,
   resetTrigger,
 }) => {
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    role: "",
-    phone: "",
-    username: "",
-    password: "",
-    confirmPassword: "",
-  });
+  const [formData, setFormData] = useState(() => staffFormValues(initialData, isEditing));
 
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
@@ -50,33 +66,20 @@ const StaffForm = ({
     { value: "cashier", label: t("roles.cashier") },
   ];
 
-  // ✅ Populate form when editing or reset
-  useEffect(() => {
-    if (isEditing && initialData) {
-      setFormData({
-        firstName: initialData.first_name || initialData.firstName || "",
-        lastName: initialData.last_name || initialData.lastName || "",
-        role: initialData.role || "",
-        phone: initialData.phone || "",
-        username: initialData.username || "",
-        password: "", // Always empty for security
-        confirmPassword: "", // Always empty for security
-      });
-    } else {
-      // reset for new staff
-      setFormData({
-        firstName: "",
-        lastName: "",
-        role: "",
-        phone: "",
-        username: "",
-        password: "",
-        confirmPassword: "",
-      });
-    }
+  // ✅ Populate form when editing or reset.
+  // LINT-1: done while rendering (React's "adjust state when a prop changes"
+  // pattern) instead of in an effect; the result on screen is the same.
+  const [prevProps, setPrevProps] = useState({ initialData, isEditing, resetTrigger });
+  if (
+    prevProps.initialData !== initialData ||
+    prevProps.isEditing !== isEditing ||
+    prevProps.resetTrigger !== resetTrigger
+  ) {
+    setPrevProps({ initialData, isEditing, resetTrigger });
+    setFormData(staffFormValues(initialData, isEditing));
     setErrors({});
     setTouched({});
-  }, [initialData, isEditing, resetTrigger]);
+  }
 
   // ✅ Handle change
   const handleChange = (e) => {

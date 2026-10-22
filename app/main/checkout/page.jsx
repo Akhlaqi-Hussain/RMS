@@ -17,7 +17,6 @@ export default function CheckoutPage() {
   const [tables, setTables] = useState([]);
   const [orders, setOrders] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const [showOrderId, setShowOrderId] = useState(false);
   const router = useRouter();
   const { t, tServer, locale, formatMoney, formatNumber } = useLanguage();
 
@@ -61,10 +60,8 @@ export default function CheckoutPage() {
     fetchOrders();
   }, [orderType, tableId]);
 
-  // Show/hide order ID field based on order type
-  useEffect(() => {
-    setShowOrderId(orderType === "existing");
-  }, [orderType]);
+  // Show/hide order ID field based on order type (LINT-1: derived, no extra state)
+  const showOrderId = orderType === "existing";
 
   const totalPrice = cartItems.reduce(
     (total, item) => total + item.price * item.quantity,

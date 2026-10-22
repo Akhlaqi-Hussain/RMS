@@ -152,8 +152,12 @@ const MenuForm = ({
     }
   };
 
-  // Reset on trigger
-  useEffect(() => {
+  // Reset on trigger.
+  // LINT-1: the form values are reset while rendering (React's "adjust state
+  // when a prop changes" pattern); only the file input is cleared in the effect.
+  const [prevResetTrigger, setPrevResetTrigger] = useState(resetTrigger);
+  if (prevResetTrigger !== resetTrigger) {
+    setPrevResetTrigger(resetTrigger);
     setFormData({
       name: "",
       description: "",
@@ -166,7 +170,9 @@ const MenuForm = ({
     setErrors({});
     setTouched({});
     setIsAddingCategory(false);
+  }
 
+  useEffect(() => {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }

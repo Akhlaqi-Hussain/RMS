@@ -151,6 +151,7 @@ npm run dev
 | API regression test (app running on `rms_test`) | `npm run test:api` |
 | Back up now / restore the newest backup | `npm run backup` / `npm run restore -- --latest` |
 | Production build and start | `npm run build` then `npm start` |
+| New empty production database / first manager | `npm run db:setup-prod` / `npm run create-manager -- --db rms_prod` |
 | Stop the database (data is kept) | `docker compose --env-file .env.local stop` |
 
 Backup, restore and a full reset are described in [`database/README.md`](database/README.md).
@@ -311,19 +312,25 @@ schemas/        form validation (zod)
 utils/          bill and report printing
 database/       migrations, seed data, Docker init script
 public/         bundled fonts and uploaded menu pictures
-docs/           screenshots for this README
+docs/           going-live guide, backup copy, real-device checklist, screenshots
 tests/api/      API regression test (npm run test:api)
-scripts/        backup, restore and the Windows backup schedule
+scripts/        backup, restore, production setup, first manager, Windows schedule and autostart
 proxy.js        page and API protection (called middleware.js before Next.js 16)
 ```
 
 ## Before going to production
 
-- A separate database with unique strong passwords and **no sample data**
-- The first manager account created by a one-time script
-- HTTPS (or a trusted local network only)
-- The backup schedule installed and `BACKUP_COPY_DIR` pointing to a second disk
-- Not yet tested: printing on a real receipt printer, Safari on iPhone
+Step-by-step guide: [`docs/GOING-LIVE.md`](docs/GOING-LIVE.md). Going live is the owner's decision; nothing runs by itself.
+
+| Step | Tool |
+|---|---|
+| A separate, **empty** database `rms_prod` (no sample data; never touches an existing database) | `npm run db:setup-prod` |
+| The first manager account (hidden password, bcrypt) | `npm run create-manager -- --db rms_prod` |
+| Second backup copy on a USB disk or second drive | [`docs/BACKUP-COPY.md`](docs/BACKUP-COPY.md) |
+| Optional: start RMS when Windows signs in | `scripts\windows\autostart-rms.ps1` |
+| Real-device checks (receipt printer, iPhone/Android, offline) | [`docs/TEST-CHECKLIST.md`](docs/TEST-CHECKLIST.md) |
+
+Use HTTPS, or a trusted local network only.
 
 ## License
 

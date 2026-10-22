@@ -37,9 +37,29 @@ export default function StaffManagementPage() {
     }
   }
 
+  // LINT-1: first load. The list is filled in when the answer arrives
+  // (no state change directly inside the effect); fetchStaffMembers() is still used to refresh.
   useEffect(() => {
-    fetchStaffMembers();
-  }, []);
+    let active = true;
+    fetch("/api/staff", { method: "GET", cache: "no-store" })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch staff members");
+        return res.json();
+      })
+      .then((data) => {
+        if (active) {setStaffMembers(data);}
+      })
+      .catch((err) => {
+        console.error("Error fetching staff members:", err.message);
+        toast.error(t("server.staffListFailed"));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [t]);
 
   // Scroll to form function
   const scrollToForm = () => {

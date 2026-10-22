@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaShoppingCart, FaSearch } from "react-icons/fa";
 import MenuItemCard from "@/components/menuItemCard";
 import { useSidebar } from "@/context/SidebarContext";
@@ -11,7 +11,6 @@ export default function MenuPage() {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
-  const [filteredItems, setFilteredItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [cartOpen, setCartOpen] = useState(false);
@@ -22,23 +21,23 @@ export default function MenuPage() {
   const { cartCount } = useCart();
   const { t } = useLanguage();
 
-  // Fetch categories
+  // Fetch categories (once).
+  // LINT-1: the error is kept as a translation key and translated when shown,
+  // so it also follows a language change.
   useEffect(() => {
-    async function fetchCategories() {
-      try {
-        const res = await fetch("/api/categories");
-        if (!res.ok) throw new Error(t("menu.categoriesFailed"));
-        const data = await res.json();
+    fetch("/api/categories")
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then((data) => {
         setCategories(data);
         // Select first category by default
-        if (data.length > 0 && !selectedCategory) {
-          setSelectedCategory(data[0].id);
+        if (data.length > 0) {
+          setSelectedCategory((current) => current || data[0].id);
         }
-      } catch (err) {
-        setError(err.message);
-      }
-    }
-    fetchCategories();
+      })
+      .catch(() => setError("menu.categoriesFailed"));
   }, []);
 
   // Fetch menu items whenever category changes
@@ -50,7 +49,7 @@ export default function MenuPage() {
           ? `/api/menu?categoryId=${selectedCategory}`
           : "/api/menu";
         const res = await fetch(url);
-        if (!res.ok) throw new Error(t("menu.itemsFailed"));
+        if (!res.ok) throw new Error();
         const all = await res.json();
         // D7: inactive items cannot be ordered, so they are not offered here
         // (Manage → Menu still lists them so they can be re-activated)
@@ -58,10 +57,9 @@ export default function MenuPage() {
           ? all.filter((item) => item.is_active === undefined || Number(item.is_active) === 1)
           : [];
         setMenuItems(data);
-        setFilteredItems(data);
         setError(null);
-      } catch (err) {
-        setError(err.message);
+      } catch {
+        setError("menu.itemsFailed");
       } finally {
         setLoading(false);
       }
@@ -71,8 +69,8 @@ export default function MenuPage() {
     }
   }, [selectedCategory]);
 
-  // Filter and sort items
-  useEffect(() => {
+  // Filter and sort items (LINT-1: worked out while rendering, no extra state)
+  const filteredItems = useMemo(() => {
     let result = [...menuItems];
 
     // Apply search filter
@@ -84,8 +82,8 @@ export default function MenuPage() {
       );
     }
 
-    setFilteredItems(result);
-  }, [menuItems, searchTerm, sortBy]);
+    return result;
+  }, [menuItems, searchTerm]);
 
   return (
     <div className="space-y-6 min-h-screen">
@@ -147,7 +145,7 @@ export default function MenuPage() {
 
       <div className="space-y-6">
         {/* Error */}
-        {error && <p className="text-center py-10 text-red-500">{error}</p>}
+        {error && <p className="text-center py-10 text-red-500">{t(error)}</p>}
 
         {/* Loading skeleton */}
         {loading ? (

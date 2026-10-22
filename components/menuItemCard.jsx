@@ -7,6 +7,9 @@ import { useLanguage } from "@/context/LanguageContext";
 
 const MenuItemCard = ({ item }) => {
   const [imageError, setImageError] = useState(false);
+  // LINT-1: one fixed value per card instead of a new one on every render,
+  // so the picture is not downloaded again each time the card redraws.
+  const [loadedAt] = useState(() => Date.now());
   const { addToCart } = useCart();
   const { t, formatMoney } = useLanguage();
 
@@ -19,7 +22,7 @@ const MenuItemCard = ({ item }) => {
       {/* Image Container */}
       <div className="relative h-28 w-full overflow-hidden">
         <Image
-          src={`${item.image}?v=${item.updatedAt || Date.now()}`}
+          src={`${item.image}?v=${item.updatedAt || loadedAt}`}
           alt={item.name}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"
