@@ -24,9 +24,9 @@ Date: ____________  Tester: ____________  RMS version (commit): ____________
 
 ## B. iPhone (Safari) and Android (Chrome) on the restaurant Wi-Fi
 
-**Before you start:** the steps in GOING-LIVE Step 6 are done (fixed address, Private network, firewall rule).
+**Before you start:** the steps in GOING-LIVE Step 6 are done (fixed address, Private network, firewall rule, and `COOKIE_SECURE=false` in `.env.local`, then RMS restarted).
 
-> **Important:** until change **PROD-2** (the login cookie for the local network) is installed, login from a phone **will not work**. You will be sent back to the login page. That is expected; mark B2 to B9 as **Blocked** in that case.
+> **If B2 sends you back to the login page,** `COOKIE_SECURE=false` is missing from `.env.local`, or RMS was not restarted after you added it.
 
 | # | Check | How | Expected | Result |
 |---|---|---|---|---|

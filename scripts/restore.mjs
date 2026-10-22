@@ -6,20 +6,27 @@
 //   npm run restore -- <backup file>       a specific file (e.g. from a USB disk)
 //   add  --db <name>   to restore into another database (default: DB_NAME in .env.local)
 //   add  --yes         to skip the typed confirmation (only for scripts)
+//   add  --with-pictures  to replace the pictures folder even when restoring a
+//                      database that is not the one RMS uses (see PROD-3 below)
 //
 // Safety:
 //   1. the backup file is checked first (every file has a SHA-256 checksum);
 //   2. a "pre-restore" backup of the CURRENT data is made before anything changes,
 //      so the restore itself can be undone with:  npm run restore -- <that file>;
 //   3. after the restore, the row count of every table is compared with the backup.
+// Pictures (PROD-3): rms_dev, rms_test and rms_prod share one pictures folder.
+//   - restoring the database RMS uses (DB_NAME in .env.local): the folder is
+//     replaced by the backup's pictures, exactly as in the backup;
+//   - restoring any other database (e.g. a practice restore into rms_test):
+//     existing pictures are kept and only missing ones are added.
 // Stop the app (Ctrl+C in the npm window) before restoring.
 // =====================================================================
 import { createInterface } from "node:readline/promises";
 import {
   copyDir, createBackup, existsSync, fmtBytes, importDatabase, join, listBackups,
-  loadConfig, log, openArchive, rmSync, sql, tableCounts,
+  loadConfig, log, openArchive, readEnvFile, rmSync, sql, tableCounts,
 } from "./backup-lib.mjs";
-import { mkdirSync, readdirSync } from "node:fs";
+import { copyFileSync, mkdirSync, readdirSync } from "node:fs";
 
 const args = process.argv.slice(2);
 const flag = (f) => args.includes(f);
@@ -40,6 +47,10 @@ async function main() {
   if (!file) throw new Error("Usage: npm run restore -- --latest   or   npm run restore -- <backup file>");
   if (!existsSync(file)) throw new Error(`File not found: ${file}`);
 
+  // PROD-3: replace the shared pictures folder only for the database RMS uses
+  const appDb = readEnvFile().DB_NAME || "rms_dev";
+  const replacePictures = cfg.db === appDb || flag("--with-pictures");
+
   console.log(`Checking ${file} …`);
   const { work, manifest } = await openArchive(file);
   try {
@@ -48,7 +59,12 @@ async function main() {
     console.log(`  Contains    : database "${manifest.database}" — ${Object.keys(manifest.tables).length} tables, ${rows} rows, ${manifest.routines} procedures; ${manifest.pictures} pictures`);
     console.log(`  Restore into: database "${cfg.db}" (mode ${cfg.mode}) and ${cfg.picturesDir}`);
     if (manifest.database !== cfg.db) console.log(`  NOTE        : the backup came from "${manifest.database}", it will be restored into "${cfg.db}".`);
-    console.log(`\n  Everything currently in "${cfg.db}" and in the pictures folder will be REPLACED.`);
+    if (replacePictures) {
+      console.log(`\n  Everything currently in "${cfg.db}" and in the pictures folder will be REPLACED.`);
+    } else {
+      console.log(`\n  Everything currently in "${cfg.db}" will be REPLACED.`);
+      console.log(`  Pictures: RMS uses "${appDb}", so existing pictures are KEPT; only missing ones are added.`);
+    }
     console.log("  A safety backup of the current data is made first.\n");
 
     if (!flag("--yes")) {
@@ -78,13 +94,28 @@ async function main() {
     if (after.routines !== manifest.routines) diffs.push(`procedures: ${after.routines} instead of ${manifest.routines}`);
     if (diffs.length) throw new Error(`Restore check failed — ${diffs.join("; ")}`);
 
-    // 4. pictures: replace the folder contents with the backup's pictures
+    // 4. pictures
     const src = join(work, "uploads", "menu");
     mkdirSync(cfg.picturesDir, { recursive: true });
-    for (const f of readdirSync(cfg.picturesDir)) rmSync(join(cfg.picturesDir, f), { recursive: true, force: true });
-    const pics = existsSync(src) ? copyDir(src, cfg.picturesDir) : 0;
+    let pics = 0;
+    let picNote;
+    if (replacePictures) {
+      // the database RMS uses: the folder becomes exactly the backup's pictures
+      for (const f of readdirSync(cfg.picturesDir)) rmSync(join(cfg.picturesDir, f), { recursive: true, force: true });
+      pics = existsSync(src) ? copyDir(src, cfg.picturesDir) : 0;
+      picNote = `${pics} pictures`;
+    } else {
+      // another database: keep every existing picture, add only the missing ones
+      if (existsSync(src)) {
+        for (const e of readdirSync(src, { withFileTypes: true })) {
+          const f = e.name;
+          if (e.isFile() && !existsSync(join(cfg.picturesDir, f))) { copyFileSync(join(src, f), join(cfg.picturesDir, f)); pics++; }
+        }
+      }
+      picNote = `pictures kept, ${pics} missing picture(s) added`;
+    }
 
-    log(cfg, `RESTORED  "${cfg.db}" from ${manifest.name}: all ${Object.keys(manifest.tables).length} tables match (${Object.values(after.counts).reduce((a, b) => a + b, 0)} rows), ${after.routines} procedures, ${pics} pictures.`);
+    log(cfg, `RESTORED  "${cfg.db}" from ${manifest.name}: all ${Object.keys(manifest.tables).length} tables match (${Object.values(after.counts).reduce((a, b) => a + b, 0)} rows), ${after.routines} procedures, ${picNote}.`);
     console.log("Start the app again (npm run dev / npm start). Everyone has to log in again only if JWT_SECRET changed.");
   } finally {
     rmSync(work, { recursive: true, force: true });

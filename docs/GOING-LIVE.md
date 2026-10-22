@@ -113,9 +113,15 @@ The full steps are in [`BACKUP-COPY.md`](BACKUP-COPY.md).
 
    To remove the rule later: `netsh advfirewall firewall delete rule name="RMS (port 3000)"`
 
-4. On the phone (same Wi-Fi), open `http://192.168.1.20:3000`.
+4. **Allow login over the local network.** With `npm start`, the login cookie is "secure", so browsers keep it only over HTTPS or on the PC itself (`localhost`). Phones and other PCs use plain `http://192.168.…`, so add this line to `.env.local`:
 
-> **Known limitation, under review (PROD-2).** With `npm start`, the login cookie is marked "secure" and is only sent over HTTPS or to `localhost`. Phones and other PCs that use the plain `http://192.168.…` address therefore can't stay logged in. The proposed fix is a setting `COOKIE_SECURE=false` for a trusted restaurant network. Until it is approved and installed, use RMS on the PC itself.
+   ```
+   COOKIE_SECURE=false
+   ```
+
+   Then restart RMS. Only do this on a **trusted** network: the restaurant Wi-Fi needs a password, and guests should use a separate guest Wi-Fi.
+
+5. On the phone (same Wi-Fi), open `http://192.168.1.20:3000` and log in. You should stay logged in when you move between pages.
 
 ## Step 7 (optional): Start RMS automatically
 
@@ -143,7 +149,7 @@ Work through [`TEST-CHECKLIST.md`](TEST-CHECKLIST.md): receipt printer, iPhone/A
 ## Rules for the live PC
 
 - **Restores:** `npm run restore -- --latest` brings back the newest `rms_prod` backup (it asks you to type the name first, and makes a safety backup).
-- **No test restores on the live folder.** A restore also replaces the menu pictures folder, and that folder is shared by `rms_dev`, `rms_test` and `rms_prod`. Restoring a test backup would replace the live menu pictures. Practise restores on a development copy (see PROD-3 in the decisions log).
+- **Practice restores are safe for the pictures.** `rms_dev`, `rms_test` and `rms_prod` share one menu pictures folder. A restore replaces that folder only for the database RMS uses (`DB_NAME` in `.env.local`). A practice restore into another database, such as `npm run restore -- --latest --db rms_test`, keeps all existing pictures and only adds missing ones.
 - **No API tests against `rms_prod`.** They create and change data. They are only for `rms_test`.
 - **Updates:** before installing a new RMS version, press **Back up now**. Then `git pull`, `npm ci`, `npm run build` and restart.
 - **Passwords:** each person has their own account. When someone leaves, deactivate the account in Manage → Staff.

@@ -137,9 +137,10 @@ npm run dev
 | `DB_PORT` | `3307` | Port of the Docker database (3306 is often used by XAMPP) |
 | `DB_USER` | `rms_app` | Limited database user used by the app |
 | `DB_PASSWORD` | — | Password of `rms_app` |
-| `DB_NAME` | `rms_dev` | `rms_dev` for daily use, `rms_test` for automated tests |
+| `DB_NAME` | `rms_dev` | `rms_dev` for daily use, `rms_test` for automated tests, `rms_prod` for real use |
 | `JWT_SECRET` | — | Long random string used to sign login cookies |
 | `MYSQL_ROOT_PASSWORD` | — | Root password of the Docker database |
+| `COOKIE_SECURE` | `false` | Optional. Only for `npm start` on a trusted local network reached over plain `http://` (phones, other PCs); see [`docs/GOING-LIVE.md`](docs/GOING-LIVE.md) |
 
 ## Everyday commands
 
@@ -258,7 +259,7 @@ Only files with this exact naming pattern are ever deleted; anything else in the
 1. checks the backup file (checksums, complete dump);
 2. asks you to type the database name to confirm;
 3. makes a **safety backup of the current data first**, so a restore can always be undone;
-4. replaces the database and the menu pictures;
+4. replaces the database, and the menu pictures if it is the database RMS uses (`DB_NAME`). Restoring another database (for example a practice restore into `rms_test`) keeps the existing pictures and only adds missing ones; `--with-pictures` forces a full replace;
 5. compares the row count of every table with the backup.
 
 **Recommended practice (3-2-1):** keep backups in at least two places. Set
@@ -293,7 +294,7 @@ run many times. Never point it at a real (production) database.
 
 ## Security
 
-- Passwords are stored as bcrypt hashes; login uses an HTTP-only cookie.
+- Passwords are stored as bcrypt hashes; login uses an HTTP-only, SameSite=Lax cookie (secure in production unless `COOKIE_SECURE=false` for a trusted local network).
 - Login and role checks on every page and API route; deactivated accounts are refused immediately.
 - Uploaded pictures are checked by their real content (JPEG/PNG/WEBP, max 5 MB) and renamed.
 - Database errors are never shown to users; friendly messages only.
