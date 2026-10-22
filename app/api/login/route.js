@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
 import { publicErrorMessage, errorStatus } from "@/lib/errors";
+import { secureCookie } from "@/lib/cookieOptions";
 
 export async function POST(req) {
   try {
@@ -48,7 +49,8 @@ export async function POST(req) {
     });
     response.cookies.set("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: secureCookie(), // PROD-2: COOKIE_SECURE=false for http on the local network
+      sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60,
       path: "/",
     });

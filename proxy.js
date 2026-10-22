@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getActiveUser } from "./lib/session";
+import { secureCookie } from "./lib/cookieOptions";
 
 export async function proxy(req) {
   const { pathname } = req.nextUrl;
@@ -62,7 +63,7 @@ export async function proxy(req) {
       res.cookies.set("token", "", {
         maxAge: 0,
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: secureCookie(), // PROD-2
         sameSite: "strict",
         path: "/",
       });

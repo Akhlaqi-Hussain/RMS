@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { secureCookie } from "@/lib/cookieOptions";
 
 export async function POST() {
   const res = NextResponse.json({ success: true });
@@ -6,7 +7,7 @@ export async function POST() {
   // Clear the JWT cookie
   res.cookies.set("token", "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: secureCookie(), // PROD-2
     sameSite: "strict",
     path: "/",
     maxAge: 0,
