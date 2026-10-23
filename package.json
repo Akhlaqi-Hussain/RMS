@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:api": "node tests/api/rms-api-test.mjs http://localhost:3000 .",
+    "test:licence": "node tests/licence/licence-test.mjs",
     "backup": "node scripts/backup.mjs",
     "backup:list": "node scripts/backup.mjs --list",
     "backup:verify": "node scripts/backup.mjs --verify",

@@ -156,6 +156,7 @@ npm run dev
 | Production build and start | `npm run build` then `npm start` |
 | New empty production database / first manager | `npm run db:setup-prod` / `npm run create-manager -- --db rms_prod` |
 | Client package without source code (checked) | `npm run package` — see [`docs/PACKAGING.md`](docs/PACKAGING.md) |
+| Licence and first-run setup test (after `npm run build`) | `npm run test:licence` — see [`docs/LICENCE.md`](docs/LICENCE.md) |
 | Stop the database (data is kept) | `docker compose --env-file .env.local stop` |
 
 Backup, restore and a full reset are described in [`database/README.md`](database/README.md).
@@ -304,6 +305,7 @@ run many times. Never point it at a real (production) database.
 - Database errors are never shown to users; friendly messages only.
 - The database port is bound to `127.0.0.1`.
 - Production dependencies: `npm audit --omit=dev` reports no known vulnerabilities (Next.js 16.3).
+- Installed RMS: offline licence (signed activation code per computer, 1 year, reminder 30 days before, read-only after the end) and a first-run setup page protected by a one-time setup code — see [`docs/LICENCE.md`](docs/LICENCE.md).
 
 ## Project structure
 
@@ -338,6 +340,8 @@ Step-by-step guide: [`docs/GOING-LIVE.md`](docs/GOING-LIVE.md). Going live is th
 Use HTTPS, or a trusted local network only.
 
 ## License
+
+The RMS **software licence** (activation codes for installed copies) is described in [`docs/LICENCE.md`](docs/LICENCE.md). The project's **copyright licence** follows:
 
 Proprietary — **all rights reserved**. See [`LICENSE`](LICENSE). The bundled fonts keep their own
 SIL Open Font License.

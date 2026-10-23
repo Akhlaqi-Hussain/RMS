@@ -32,6 +32,8 @@ import {
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { configFile } from "../lib/rmsPaths.mjs";
+import { OWNER_PUBLIC_KEY } from "../lib/licence/ownerKey.mjs";
+import { publicKeyFromBase64 } from "../lib/licence/format.mjs";
 import { readEnvFile } from "./backup-lib.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -55,6 +57,18 @@ function listFiles(dir) {
 }
 const rel = (p) => relative(OUT, p).split(sep).join("/");
 const sha256 = (file) => createHash("sha256").update(readFileSync(file)).digest("hex");
+
+// ---------- 0. licence key (R9-LIC) ----------
+// The client package always checks the licence, with the owner's public key.
+// Without it no client could ever be activated, so no package is made.
+function checkOwnerKey() {
+  if (!publicKeyFromBase64(OWNER_PUBLIC_KEY)) {
+    fail("the owner's public licence key is not set in lib/licence/ownerKey.mjs.\n" +
+      "Run the licence tool once:  node rms-licence.mjs init   then   node rms-licence.mjs public-key-module > lib\\licence\\ownerKey.mjs\n" +
+      "(see docs/LICENCE.md)");
+  }
+  step("Licence: the owner's public key is set");
+}
 
 // ---------- 1. build ----------
 function build() {
@@ -217,6 +231,7 @@ function report({ files, problems }) {
   console.log("\nOK  Package ready and checked.");
 }
 
+checkOwnerKey();
 build();
 assemble();
 report(check());
