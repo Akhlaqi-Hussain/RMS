@@ -1,5 +1,12 @@
+// R8-PKG: `npm run package` sets RMS_PACKAGE=1 to build the client package:
+// a self-contained server ("standalone") in its own folder .next-package, so the
+// normal `npm run build` / `npm start` (folder .next) are not affected at all.
+const packaging = process.env.RMS_PACKAGE === "1";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  ...(packaging ? { output: "standalone", distDir: ".next-package" } : {}),
+
   // S1-HDR: don't announce "X-Powered-By: Next.js" on every answer.
   poweredByHeader: false,
 

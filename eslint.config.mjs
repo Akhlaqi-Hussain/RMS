@@ -19,6 +19,8 @@ const eslintConfig = defineConfig([
   globalIgnores([
     "node_modules/**",
     ".next/**",
+    ".next-package/**", // R8-PKG: client package build (npm run package)
+    "dist/**", // R8-PKG: client package output
     "out/**",
     "build/**",
     "next-env.d.ts",

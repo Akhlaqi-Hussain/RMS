@@ -16,6 +16,9 @@
 # next.js
 /.next/
 /out/
+# R8-PKG: client package build and output (npm run package)
+/.next-package/
+/dist/
 
 # production
 /build

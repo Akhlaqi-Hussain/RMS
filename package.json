@@ -14,7 +14,8 @@
     "backup:verify": "node scripts/backup.mjs --verify",
     "restore": "node scripts/restore.mjs",
     "db:setup-prod": "node scripts/setup-production-db.mjs",
-    "create-manager": "node scripts/create-manager.mjs"
+    "create-manager": "node scripts/create-manager.mjs",
+    "package": "node scripts/package.mjs"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
