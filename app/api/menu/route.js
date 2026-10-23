@@ -5,6 +5,8 @@ import path from "path";
 import { validateMenuImage } from "@/lib/upload";
 import { publicErrorMessage, errorStatus } from "@/lib/errors";
 import { requireActiveUser } from "@/lib/session";
+// R8-DATA: pictures live in the data folder of an installed RMS (lib/rmsPaths.mjs)
+import { picturesDir } from "@/lib/rmsPaths.mjs";
 
 // POST -> Add menu item with image
 export async function POST(req) {
@@ -45,10 +47,10 @@ export async function POST(req) {
       }
       filename = check.filename;
 
-      const uploadDir = path.join(process.cwd(), "public", "uploads", "menu");
-      await mkdir(uploadDir, { recursive: true });
+      const uploadDir = picturesDir(process.cwd());
+      await mkdir(/*turbopackIgnore: true*/ uploadDir, { recursive: true });
 
-      await writeFile(path.join(uploadDir, filename), buffer);
+      await writeFile(path.join(/*turbopackIgnore: true*/ uploadDir, filename), buffer);
     }
 
     //Insert item into DB

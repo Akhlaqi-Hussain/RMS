@@ -5,6 +5,8 @@ import path from "path";
 import { validateMenuImage } from "@/lib/upload";
 import { publicErrorMessage, errorStatus } from "@/lib/errors";
 import { requireActiveUser } from "@/lib/session";
+// R8-DATA: pictures live in the data folder of an installed RMS (lib/rmsPaths.mjs)
+import { picturesDir } from "@/lib/rmsPaths.mjs";
 
 // PUT -> Update menu item
 export async function PUT(req, { params }) {
@@ -60,21 +62,21 @@ export async function PUT(req, { params }) {
       }
       filename = check.filename;
 
-      const uploadDir = path.join(process.cwd(), "public", "uploads", "menu");
-      await mkdir(uploadDir, { recursive: true });
+      const uploadDir = picturesDir(process.cwd());
+      await mkdir(/*turbopackIgnore: true*/ uploadDir, { recursive: true });
 
       // Delete old image if exists
       if (existingItem[0].image) {
-        const oldImagePath = path.join(uploadDir, existingItem[0].image);
+        const oldImagePath = path.join(/*turbopackIgnore: true*/ uploadDir, existingItem[0].image);
         try {
-          await unlink(oldImagePath);
+          await unlink(/*turbopackIgnore: true*/ oldImagePath);
         } catch (error) {
           console.error("Error deleting old image:", error);
           // Continue with new image upload even if old deletion fails
         }
       }
 
-      await writeFile(path.join(uploadDir, filename), buffer);
+      await writeFile(path.join(/*turbopackIgnore: true*/ uploadDir, filename), buffer);
     }
 
     // Update item in DB - Add status parameter
@@ -195,15 +197,9 @@ export async function DELETE(req, { params }) {
 
     // Delete image file if exists
     if (existingItem[0].image) {
-      const imagePath = path.join(
-        process.cwd(),
-        "public",
-        "uploads",
-        "menu",
-        existingItem[0].image
-      );
+      const imagePath = path.join(/*turbopackIgnore: true*/ picturesDir(process.cwd()), existingItem[0].image);
       try {
-        await unlink(imagePath);
+        await unlink(/*turbopackIgnore: true*/ imagePath);
       } catch (error) {
         console.error("Error deleting image file:", error);
         // Continue with database deletion even if file deletion fails

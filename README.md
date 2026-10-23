@@ -141,6 +141,8 @@ npm run dev
 | `JWT_SECRET` | — | Long random string used to sign login cookies |
 | `MYSQL_ROOT_PASSWORD` | — | Root password of the Docker database |
 | `COOKIE_SECURE` | `false` | Optional. Only for `npm start` on a trusted local network reached over plain `http://` (phones, other PCs); see [`docs/GOING-LIVE.md`](docs/GOING-LIVE.md) |
+| `BACKUP_DB_USER`, `BACKUP_DB_PASSWORD` | `rms_backup` | Optional, with `BACKUP_MODE=direct`: backups use this read-only database user instead of root; see [`docs/PACKAGING.md`](docs/PACKAGING.md) |
+| `RMS_DATA_DIR` | `C:\ProgramData\RMS` | Installed RMS only (set by the service, not in this file): settings, pictures, backups and logs all in that folder; see [`docs/PACKAGING.md`](docs/PACKAGING.md) |
 
 ## Everyday commands
 
@@ -153,6 +155,7 @@ npm run dev
 | Back up now / restore the newest backup | `npm run backup` / `npm run restore -- --latest` |
 | Production build and start | `npm run build` then `npm start` |
 | New empty production database / first manager | `npm run db:setup-prod` / `npm run create-manager -- --db rms_prod` |
+| Client package without source code (checked) | `npm run package` — see [`docs/PACKAGING.md`](docs/PACKAGING.md) |
 | Stop the database (data is kept) | `docker compose --env-file .env.local stop` |
 
 Backup, restore and a full reset are described in [`database/README.md`](database/README.md).
@@ -279,7 +282,8 @@ to the PC, then run `npm run restore -- <file>`.
 
 The API regression test in [`tests/api/rms-api-test.mjs`](tests/api/rms-api-test.mjs) checks login,
 roles, menu, tables, staff, orders (including all-or-nothing saving), kitchen, payment, dashboard,
-reports, upload safety and the backup screen — **143 checks**. One check makes a small manual backup
+reports, upload safety, the backup screen and the security rules of Round 7 — **177 checks**
+(178 when the test is started with `RMS_DATA_DIR`). One check makes a small manual backup
 of the test database. It needs no extra packages.
 
 1. Window A: `set DB_NAME=rms_test` (macOS/Linux: `export DB_NAME=rms_test`), then `npm start`.
