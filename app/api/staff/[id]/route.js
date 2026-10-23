@@ -1,13 +1,24 @@
 import { NextResponse } from "next/server";
-import { getUserFromToken } from "@/lib/auth";
+// S1-ROLE: the CURRENT role and active status from the database, not the role
+// saved in the 7-day login token (a demoted or deactivated user loses rights at once).
+import { getActiveUser } from "@/lib/session";
 import pool from "@/lib/db";
 import bcrypt from "bcrypt";
+import { withTransaction } from "@/lib/transaction";
+import {
+  isValidStaffUpdate,
+  INVALID_STAFF_DATA,
+  LAST_MANAGER,
+  CANNOT_DEACTIVATE_SELF,
+  lockActiveManagerIds,
+  removesLastManager,
+} from "@/lib/staffRules";
 
 // GET - Get staff by ID
 export async function GET(request, { params }) {
   try {
     // Check authentication
-    const currentUser = await getUserFromToken(request);
+    const currentUser = await getActiveUser(request);
     if (!currentUser) {
       return NextResponse.json({ error: "دسترسی غیر مجاز" }, { status: 401 });
     }
@@ -46,7 +57,7 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   try {
     // Check authentication
-    const currentUser = await getUserFromToken(request);
+    const currentUser = await getActiveUser(request);
     if (!currentUser) {
       return NextResponse.json({ error: "دسترسی غیر مجاز" }, { status: 401 });
     }
@@ -69,6 +80,11 @@ export async function PUT(request, { params }) {
         { error: "تمامی فیلدهای ضروری باید پر شوند" },
         { status: 400 }
       );
+    }
+
+    // S1-VAL: same rules as the staff edit form, checked again on the server
+    if (!isValidStaffUpdate(updateData)) {
+      return NextResponse.json({ error: INVALID_STAFF_DATA }, { status: 400 });
     }
 
     // Check if staff exists
@@ -118,8 +134,17 @@ export async function PUT(request, { params }) {
       ];
     }
 
-    // Update staff in database
-    await pool.query(updateQuery, queryParams);
+    // Update staff in database.
+    // S1-MGR: the last active manager can't be given another role.
+    const blocked = await withTransaction(async (conn) => {
+      const managerIds = await lockActiveManagerIds(conn);
+      if (role !== "manager" && removesLastManager(managerIds, id)) return true;
+      await conn.query(updateQuery, queryParams);
+      return false;
+    });
+    if (blocked) {
+      return NextResponse.json({ error: LAST_MANAGER }, { status: 400 });
+    }
 
     // Get updated staff data
     const [updatedRows] = await pool.query("CALL getStaffById(?)", [id]);
@@ -142,6 +167,11 @@ export async function PUT(request, { params }) {
 // PATCH -> Update staff member status only
 export async function PATCH(req, { params }) {
   try {
+    const currentUser = await getActiveUser(req);
+    if (!currentUser) {
+      return NextResponse.json({ error: "دسترسی غیر مجاز" }, { status: 401 });
+    }
+
     const { id } = await params;
     const { is_active } = await req.json();
 
@@ -166,11 +196,26 @@ export async function PATCH(req, { params }) {
       );
     }
 
-    // Update staff status
-    const [result] = await pool.query(
-      "UPDATE staff SET is_active = ? WHERE staff_id = ?",
-      [is_active, id]
-    );
+    // S1-MGR: a manager can't deactivate his/her own account
+    if (!is_active && Number(id) === Number(currentUser.id)) {
+      return NextResponse.json({ error: CANNOT_DEACTIVATE_SELF }, { status: 400 });
+    }
+
+    // Update staff status.
+    // S1-MGR: the last active manager can't be deactivated.
+    const result = await withTransaction(async (conn) => {
+      const managerIds = await lockActiveManagerIds(conn);
+      if (!is_active && removesLastManager(managerIds, id)) return { lastManager: true };
+      const [res] = await conn.query(
+        "UPDATE staff SET is_active = ? WHERE staff_id = ?",
+        [is_active, id]
+      );
+      return res;
+    });
+
+    if (result.lastManager) {
+      return NextResponse.json({ error: LAST_MANAGER }, { status: 400 });
+    }
 
     if (result.affectedRows === 0) {
       return NextResponse.json(

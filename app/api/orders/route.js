@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { withTransaction } from "@/lib/transaction";
-import { getUserFromToken } from "@/lib/auth";
+// S1-ROLE: the CURRENT role and active status from the database, not the role
+// saved in the 7-day login token (a demoted or deactivated user loses rights at once).
+import { getActiveUser } from "@/lib/session";
 import { publicErrorMessage, errorStatus } from "@/lib/errors";
 
 // Create new order
 export async function POST(req) {
   try {
-    const user = await getUserFromToken(req);
+    const user = await getActiveUser(req);
     if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -56,7 +58,7 @@ export async function POST(req) {
 // fetch orders based on user role
 export async function GET(req) {
   try {
-    const user = await getUserFromToken(req);
+    const user = await getActiveUser(req);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

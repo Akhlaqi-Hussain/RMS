@@ -122,7 +122,13 @@
     "reportFailed": "راپور جوړ نه شو",
     "reportTypeInvalid": "د راپور ډول سم نه دی",
     "reportFieldsRequired": "د راپور ډول، د پیل نېټه او د پای نېټه اړین دي",
-    "categoryTaken": "دا کټګوري مخکې شته"
+    "categoryTaken": "دا کټګوري مخکې شته",
+    "loginFailed": "کارن نوم یا پټنوم سم نه دی",
+    "tooManyAttempts": "ډېرې ناکامې هڅې. مهرباني وکړئ ۱۵ دقیقې وروسته بیا هڅه وکړئ.",
+    "orderIdMismatch": "د سفارش شمېره سمون نه خوري",
+    "lastManager": "لږ تر لږه یو فعال مدیر باید پاتې شي",
+    "cannotDeactivateSelf": "تاسو خپل حساب غیرفعاله کولی نه شئ",
+    "invalidStaffData": "د کارکوونکي ځینې معلومات سم نه دي. مهرباني وکړئ فورمه وګورئ."
   },
   "login": {
     "welcome": "ښه راغلاست",

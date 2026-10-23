@@ -1,11 +1,13 @@
 import pool from "@/lib/db";
-import { getUserFromToken } from "@/lib/auth";
+// S1-ROLE: the CURRENT role and active status from the database, not the role
+// saved in the 7-day login token (a demoted or deactivated user loses rights at once).
+import { getActiveUser } from "@/lib/session";
 import { publicErrorMessage, errorStatus } from "@/lib/errors";
 
 // Confirm payment
 export async function POST(req) {
   try {
-    const user = await getUserFromToken(req);
+    const user = await getActiveUser(req);
 
     if (!user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
