@@ -19,6 +19,7 @@ Date: ____________  Tester: ____________  RMS version (commit): ____________
 | A5 | Long order | An order with 15+ items | Prints completely, no page break inside a line | |
 | A6 | Without internet | Unplug the network cable or turn off Wi-Fi, then print A1 and A2 | Prints the same as with internet (the fonts are built in) | |
 | A7 | Print dialog | In the print dialog: margins **None** or Minimum, scale 100%, headers and footers **off** | No browser date or URL on the receipt. If there is one, turn off "Headers and footers" once; Chrome remembers it | |
+| A8 | Special characters (S1-XSS) | New order with the note `<b>test</b> & "quotes"`, then print the kitchen bill and, after payment, the customer bill | The note prints **exactly as typed**, including `<b>` and `</b>` (it must NOT turn bold), and no pop-up message appears | |
 
 **If a receipt is too wide or too small,** note the paper width and send a photo. The bill layout can be adjusted.
 
