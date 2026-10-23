@@ -68,4 +68,13 @@ Date: ____________  Tester: ____________  RMS version (commit): ____________
 | E2 | Cashier pays while a waiter adds items to another order | Both work | |
 | E3 | Chef screen open for 1 hour | It still shows new orders. Note whether you have to reload it | |
 
+## F. Licence (Windows PC, licence check switched on)
+
+| # | Check | Expected | Result |
+|---|---|---|---|
+| F1 | Start RMS with the licence check on (Round 9 runbook) and open RMS | The licence page opens with a machine code and the provider's contact details | |
+| F2 | The same machine code after a restart of RMS and of the PC | Exactly the same code | |
+| F3 | Activate with a code from the licence tool | "Licensed until …"; login works | |
+| F4 | A 20-day code | Yellow bar for everyone; daily pop-up for managers | |
+
 **Send the filled-in table back,** with photos of the receipts. Every **Problem** becomes a small, separate fix proposal.

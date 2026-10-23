@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { getActiveUser } from "./lib/session";
 import { secureCookie } from "./lib/cookieOptions";
+import { licenceStatus, LICENCE_REQUIRED, LICENCE_READ_ONLY } from "./lib/licence/state.mjs";
+import { ensureSetupCode, firstRunNeeded } from "./lib/firstRun.mjs";
+
+// R9-LIC: what still works in read-only mode (licence expired or clock wrong):
+// every GET, plus logging in/out, the licence page, backups and reports.
+const READ_ONLY_ALLOWED = ["/api/login", "/api/logout", "/api/licence", "/api/reports", "/api/backups", "/api/backups/settings"];
 
 export async function proxy(req) {
   const { pathname } = req.nextUrl;
@@ -10,8 +16,31 @@ export async function proxy(req) {
     return NextResponse.next();
   }
 
+  // R9-LIC: the licence page is always reachable
+  if (pathname === "/licence" || pathname === "/api/licence") {
+    return NextResponse.next();
+  }
+  // R9-LIC: without a valid licence (installed RMS) only the licence page works
+  const licence = await licenceStatus();
+  if (licence.blocked) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: LICENCE_REQUIRED }, { status: 403 });
+    }
+    return NextResponse.redirect(new URL("/licence", req.url));
+  }
+
+  // R9-SETUP: first start — no active manager yet → first-run setup page
+  if (pathname === "/setup" || pathname === "/api/setup") {
+    if (await firstRunNeeded()) ensureSetupCode();
+    return NextResponse.next(); // the setup page and API check everything themselves
+  }
+
   // Public route: login
   if (pathname === "/login") {
+    if (await firstRunNeeded()) {
+      ensureSetupCode();
+      return NextResponse.redirect(new URL("/setup", req.url));
+    }
     const user = await getActiveUser(req);
     if (user) {
       return NextResponse.redirect(new URL("/main", req.url));
@@ -49,6 +78,11 @@ export async function proxy(req) {
 
     if (managerOnly && user.role !== "manager") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // R9-LIC: read-only mode — no new orders, payments or changes
+    if (licence.readOnly && !isRead && !READ_ONLY_ALLOWED.includes(pathname)) {
+      return NextResponse.json({ error: LICENCE_READ_ONLY }, { status: 403 });
     }
 
     return NextResponse.next();
@@ -93,5 +127,6 @@ export const config = {
   // about 1 MB that pass through Node.js middleware, which would break picture
   // uploads. Those two routes apply exactly the same checks themselves via
   // requireActiveUser() from lib/session.js.
-  matcher: ["/login", "/main/:path*", "/api/((?!menu(?:/|$)).*)"],
+  // R9-LIC / R9-SETUP: /licence and /setup added.
+  matcher: ["/login", "/licence", "/setup", "/main/:path*", "/api/((?!menu(?:/|$)).*)"],
 };

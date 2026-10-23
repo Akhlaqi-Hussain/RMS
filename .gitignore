@@ -19,6 +19,8 @@
 # R8-PKG: client package build and output (npm run package)
 /.next-package/
 /dist/
+# R9-LIC: licence code and first-run setup code of a development copy
+/.rms-licence/
 
 # production
 /build
