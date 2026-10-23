@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { FaUtensils, FaUsers, FaDatabase } from "react-icons/fa";
+import { FaUtensils, FaUsers, FaDatabase, FaKey } from "react-icons/fa";
 import PageContainer from "@/components/pageContainer";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -63,6 +63,13 @@ export default function ManagePage() {
           <FaDatabase className="w-4 h-4" />
           <span>{t("manage.tabBackup")}</span>
         </button>
+      </div>
+
+      {/* R9-LIC: licence status and activation (separate page, also used on first start) */}
+      <div className="flex justify-end -mt-3">
+        <a href="/licence" className="inline-flex items-center gap-2 text-sm underline" style={{ color: "var(--color-primary)" }}>
+          <FaKey className="w-3 h-3" /> {t("licence.manageLink")}
+        </a>
       </div>
 
       {/* Content */}

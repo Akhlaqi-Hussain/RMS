@@ -7,6 +7,11 @@ const packaging = process.env.RMS_PACKAGE === "1";
 const nextConfig = {
   ...(packaging ? { output: "standalone", distDir: ".next-package" } : {}),
 
+  // R9-LIC: written into the program when it is built. In the client package
+  // the licence check is therefore always on and cannot be switched off with
+  // a setting (see lib/licence/state.mjs).
+  env: { RMS_LICENCE_BUILD: packaging ? "package" : "dev" },
+
   // S1-HDR: don't announce "X-Powered-By: Next.js" on every answer.
   poweredByHeader: false,
 
