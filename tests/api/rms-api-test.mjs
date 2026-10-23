@@ -18,6 +18,10 @@
 // Version 6: BACKUP-2 backup status API (manager only, read-only).
 // Version 7: BACKUP-3 Manage → Backups (backup now, schedule, download).
 //   Makes one small "manual" backup of the database the app uses (rms_test).
+// Version 8 (round 7, security batch S1): S1-LOGIN one message + pause after
+//   10 failures, S1-HDR headers, S1-ROLE current role, S1-ORD own orders only,
+//   S1-VAL staff checks, S1-MGR keep one active manager.
+//   The S1-XSS print check needs a browser: see docs/TEST-CHECKLIST.md.
 // =====================================================================
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -68,8 +72,11 @@ async function main() {
   }
   let r = await call(null, "POST", "/api/login", { username: "manager1", password: "wrong-pass" });
   check("AUTH wrong password rejected (401)", r.status === 401, r.text);
-  r = await call(null, "POST", "/api/login", { username: "nobody_xyz", password: "whatever1" });
+  const wrongPwText = r.json?.message;
+  await login("manager1"); // S1-LOGIN: a good login clears the failure count (repeated runs never pause manager1)
+  r = await call(null, "POST", "/api/login", { username: `nobody_${RUN}`, password: "whatever1" });
   check("AUTH unknown user rejected (401)", r.status === 401, r.text);
+  check("S1-LOGIN unknown user and wrong password give the same message", !!wrongPwText && r.json?.message === wrongPwText, `${wrongPwText} | ${r.json?.message}`);
   r = await call("manager1", "GET", "/api/auth");
   check("AUTH /api/auth returns role", r.status === 200 && r.json?.role === "manager", r.text);
   r = await call(null, "GET", "/api/auth");
@@ -421,6 +428,116 @@ async function main() {
     const res = await fetch(BASE + p);
     check(`BUG-12 ${p} → 404`, res.status === 404, `status ${res.status}`);
   }
+
+
+  // ---------- 9. Security batch S1 (round 7) ----------
+  const mkStaff = async (prefix, role, phone) => {
+    const u = `${prefix}_${RUN}`;
+    const res = await call("manager1", "POST", "/api/staff", { firstName: "Temp", lastName: "Staff", username: u, password: PASSWORD, role, phone });
+    await login(u);
+    return { u, id: res.json?.staff_id };
+  };
+
+  // S1-HDR: security headers on pages and API answers
+  for (const [label, path] of [["page /login", "/login"], ["API /api/auth", "/api/auth"]]) {
+    const res = await fetch(BASE + path, { redirect: "manual" });
+    const h = (k) => res.headers.get(k) || "";
+    check(`S1-HDR ${label} has security headers`,
+      h("x-frame-options") === "DENY" && h("content-security-policy").includes("frame-ancestors 'none'") &&
+      h("x-content-type-options") === "nosniff" && h("referrer-policy") === "same-origin" && h("permissions-policy").includes("camera=()"),
+      [...res.headers].filter(([k]) => /frame|security|nosniff|referrer|permissions|content-type-options/.test(k)).map(([k, v]) => `${k}=${v}`).join("; "));
+    check(`S1-HDR ${label} hides X-Powered-By`, !res.headers.has("x-powered-by"), h("x-powered-by"));
+  }
+
+  // S1-LOGIN: 10 wrong passwords pause that username (only that one)
+  const tl = await mkStaff("throttle", "waiter", "0700000091");
+  const codes = [];
+  for (let i = 0; i < 10; i++) codes.push((await call(null, "POST", "/api/login", { username: tl.u, password: `wrong-${i}` })).status);
+  check("S1-LOGIN 10 wrong passwords → 401 each", codes.every((c) => c === 401), codes.join(","));
+  r = await call(null, "POST", "/api/login", { username: tl.u, password: "wrong-x" });
+  check("S1-LOGIN 11th attempt is paused (429 + Retry-After)", r.status === 429 && Number(r.headers.get("retry-after")) > 0, `${r.status} ${r.headers.get("retry-after")} ${r.text}`);
+  r = await call(null, "POST", "/api/login", { username: tl.u.toUpperCase(), password: PASSWORD });
+  check("S1-LOGIN even the right password waits while paused (429)", r.status === 429, `${r.status}`);
+  r = await login("waiter1");
+  check("S1-LOGIN other users are not affected (200)", r.status === 200, `${r.status}`);
+
+  // S1-ROLE: the current role counts, not the role inside the login token
+  const tc = await mkStaff("cashierS1", "cashier", "0700000092");
+  r = await call("manager1", "POST", "/api/orders", { table_id: 3, items: [{ menu_item_id: 7, qty: 1, price: priceOf[7] }] });
+  const orderR = r.json?.orderId;
+  await call("manager1", "PUT", `/api/staff/${tc.id}`, { firstName: "Temp", lastName: "Staff", role: "waiter", phone: "0700000092", username: tc.u });
+  r = await call(tc.u, "POST", `/api/orders/${orderR}/payment`, { order_id: orderR, subtotal: priceOf[7], discount: 0 });
+  check("S1-ROLE demoted cashier cannot take a payment with the old login (403)", r.status === 403, `${r.status} ${r.text}`);
+  r = await call(tc.u, "GET", "/api/auth");
+  check("S1-ROLE /api/auth shows the current role", r.status === 200 && r.json?.role === "waiter", r.text);
+  await call("manager1", "PATCH", `/api/staff/${tc.id}`, { is_active: false });
+  r = await call(tc.u, "GET", "/api/auth");
+  check("S1-ROLE /api/auth refuses a deactivated account (401)", r.status === 401, `${r.status}`);
+  await call("manager1", "DELETE", `/api/orders/${orderR}`);
+
+  // S1-ORD: a waiter adds items only to his/her own orders (owner decision Q1 = A)
+  const tw = await mkStaff("waiterS1", "waiter", "0700000093");
+  r = await call(tw.u, "POST", "/api/orders", { table_id: 4, notes: "S1-ORD", items: [{ menu_item_id: 7, qty: 1, price: priceOf[7] }] });
+  const orderW = r.json?.orderId;
+  check("S1-ORD setup: second waiter's order", r.status === 200 && Number.isInteger(orderW), r.text);
+  r = await call("waiter1", "POST", `/api/orders/${orderW}`, { orderId: orderW, items: [{ menu_item_id: 7, qty: 5, price: priceOf[7] }] });
+  check("S1-ORD waiter cannot add items to another waiter's order (403)", r.status === 403, `${r.status} ${r.text}`);
+  r = await call(tw.u, "POST", `/api/orders/${orderW}`, { orderId: orderA, items: [{ menu_item_id: 7, qty: 1, price: priceOf[7] }] });
+  check("S1-ORD order id in the body must match the address (400)", r.status === 400, `${r.status} ${r.text}`);
+  r = await call(tw.u, "POST", `/api/orders/${orderW}`, { orderId: orderW, items: [{ menu_item_id: 7, qty: 1, price: priceOf[7] }] });
+  check("S1-ORD waiter can add items to own order (200)", r.status === 200, r.text);
+  r = await call("manager1", "POST", `/api/orders/${orderW}`, { orderId: orderW, items: [{ menu_item_id: 7, qty: 1, price: priceOf[7] }] });
+  check("S1-ORD manager can add items to any order (200)", r.status === 200, r.text);
+  r = await call("waiter1", "POST", "/api/orders/999999", { orderId: 999999, items: [{ menu_item_id: 7, qty: 1, price: priceOf[7] }] });
+  check("S1-ORD unknown order → 404", r.status === 404, `${r.status}`);
+  r = await call("manager1", "GET", `/api/orders/${orderW}`);
+  check("S1-ORD order has exactly the allowed items (3)", (r.json?.items || []).reduce((n, i) => n + i.qty, 0) === 3, JSON.stringify((r.json?.items || []).map((i) => i.qty)));
+  r = await call("waiter1", "GET", "/api/orders/by-table?table_id=4");
+  check("S1-ORD checkout list: waiter does not see another waiter's order", r.status === 200 && Array.isArray(r.json) && !r.json.some((o) => o.order_id === orderW), r.text.slice(0, 200));
+  r = await call(tw.u, "GET", "/api/orders/by-table?table_id=4");
+  check("S1-ORD checkout list: waiter sees own order", r.status === 200 && r.json?.some((o) => o.order_id === orderW), r.text.slice(0, 200));
+  r = await call("cashier1", "GET", "/api/orders/by-table?table_id=4");
+  check("S1-ORD checkout list: cashier sees all open orders", r.status === 200 && r.json?.some((o) => o.order_id === orderW), r.text.slice(0, 200));
+  await call(tw.u, "DELETE", `/api/orders/${orderW}`);
+  await call("manager1", "PATCH", `/api/staff/${tw.id}`, { is_active: false });
+
+  // S1-VAL: the server applies the staff form's rules
+  const good = { firstName: "Valid", lastName: "Person", username: `val_${RUN}`, password: PASSWORD, role: "waiter", phone: "0700000094" };
+  for (const [label, body] of [
+    ["missing password", { ...good, password: undefined }],
+    ["short password", { ...good, password: "abc" }],
+    ["bad phone", { ...good, phone: "12345" }],
+    ["unknown role", { ...good, role: "owner" }],
+    ["short username", { ...good, username: "ab" }],
+    ["name with digits", { ...good, firstName: "R2D2" }],
+  ]) {
+    r = await call("manager1", "POST", "/api/staff", body);
+    check(`S1-VAL new staff: ${label} → 400`, r.status === 400 && /معلومات کارمند/.test(r.json?.error || ""), `${r.status} ${r.text}`);
+  }
+  r = await call("manager1", "PUT", `/api/staff/${tl.id}`, { firstName: "Temp", lastName: "Staff", role: "owner", phone: "0700000091", username: tl.u });
+  check("S1-VAL edit staff: unknown role → 400", r.status === 400 && /معلومات کارمند/.test(r.json?.error || ""), `${r.status} ${r.text}`);
+  r = await call("manager1", "PUT", `/api/staff/${tl.id}`, { firstName: "Temp", lastName: "Staff", role: "waiter", phone: "0700000091", username: tl.u });
+  check("S1-VAL edit staff: valid data still saved (200)", r.status === 200, `${r.status} ${r.text}`);
+  await call("manager1", "PATCH", `/api/staff/${tl.id}`, { is_active: false });
+
+  // S1-MGR: always keep at least one active manager
+  r = await call("manager1", "PATCH", "/api/staff/1", { is_active: false });
+  check("S1-MGR manager cannot deactivate own account (400)", r.status === 400 && /حساب خود/.test(r.json?.error || ""), `${r.status} ${r.text}`);
+  const tm = await mkStaff("managerS1", "manager", "0700000095");
+  r = await call("manager1", "PUT", `/api/staff/${tm.id}`, { firstName: "Temp", lastName: "Staff", role: "waiter", phone: "0700000095", username: tm.u });
+  check("S1-MGR a manager can be demoted while another manager remains (200)", r.status === 200, `${r.status} ${r.text}`);
+  await call("manager1", "PATCH", `/api/staff/${tm.id}`, { is_active: false });
+  r = await call("manager1", "GET", "/api/staff");
+  const activeManagers = (r.json || []).filter((s) => s.role === "manager" && s.active);
+  if (activeManagers.length === 1 && activeManagers[0].username === "manager1") {
+    r = await call("manager1", "PUT", "/api/staff/1", { firstName: "Manager", lastName: "One", role: "waiter", phone: "0700000001", username: "manager1" });
+    check("S1-MGR the last active manager cannot be demoted (400)", r.status === 400 && /مدیر فعال/.test(r.json?.error || ""), `${r.status} ${r.text}`);
+    if (r.status === 200) console.log("!! manager1 was demoted: re-create rms_test (see database/README.md) before testing again.");
+  } else {
+    record("KNOWN", "S1-MGR last-manager check skipped: rms_test has other active managers", activeManagers.map((m) => m.username).join(","));
+  }
+  r = await call("manager1", "GET", "/api/staff");
+  check("S1-MGR manager1 is still an active manager", (r.json || []).some((s) => s.username === "manager1" && s.role === "manager" && s.active), "");
 
   r = await call("manager1", "POST", "/api/logout");
   check("AUTH logout", r.status === 200, r.text);

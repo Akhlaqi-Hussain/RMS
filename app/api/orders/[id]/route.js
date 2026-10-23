@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { withTransaction } from "@/lib/transaction";
-import { getUserFromToken } from "@/lib/auth";
+// S1-ROLE: the CURRENT role and active status from the database, not the role
+// saved in the 7-day login token (a demoted or deactivated user loses rights at once).
+import { getActiveUser } from "@/lib/session";
 import { publicErrorMessage, errorStatus } from "@/lib/errors";
 
 // SEC-5: order access rules.
@@ -24,11 +26,12 @@ function isOtherWaitersOrder(user, order) {
 //Add items to an existing order
 export async function POST(req, { params }) {
   try {
-    const user = await getUserFromToken(req);
+    const user = await getActiveUser(req);
     if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
     const { orderId, items } = await req.json();
 
     if (!orderId || !items?.length) {
@@ -38,11 +41,27 @@ export async function POST(req, { params }) {
       );
     }
 
+    // S1-ORD: the order in the address is the one that is changed; a different
+    // order number in the request body is refused.
+    if (String(orderId) !== String(id)) {
+      return NextResponse.json({ error: "Order ID does not match" }, { status: 400 });
+    }
+
+    // S1-ORD: the same owner rule as viewing, cancelling and sending to the
+    // kitchen (SEC-5): a waiter may add items only to his/her OWN orders.
+    const owner = await findOrderOwner(id);
+    if (!owner) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+    if (isOtherWaitersOrder(user, owner)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     // BUG-4: all new items are added together or not at all
     await withTransaction(async (conn) => {
       for (const item of items) {
         await conn.query("CALL addOrderItems(?, ?, ?, ?)", [
-          orderId,
+          id,
           item.menu_item_id,
           item.qty,
           item.price,
@@ -70,7 +89,7 @@ export async function GET(req, { params }) {
   }
 
   try {
-    const user = await getUserFromToken(req);
+    const user = await getActiveUser(req);
 
     if (!user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -132,7 +151,7 @@ export async function DELETE(req, { params }) {
   }
 
   try {
-    const user = await getUserFromToken(req);
+    const user = await getActiveUser(req);
 
     if (!user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -189,7 +208,7 @@ export async function PATCH(req, { params }) {
   }
 
   try {
-    const user = await getUserFromToken(req);
+    const user = await getActiveUser(req);
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

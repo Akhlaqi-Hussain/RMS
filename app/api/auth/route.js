@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import { getUserFromToken } from "@/lib/auth";
+// S1-ROLE: the CURRENT role and active status from the database, not the role
+// saved in the 7-day login token (a demoted or deactivated user loses rights at once).
+import { getActiveUser } from "@/lib/session";
 
 export async function GET(request) {
   try {
-    const user = await getUserFromToken(request);
+    const user = await getActiveUser(request);
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

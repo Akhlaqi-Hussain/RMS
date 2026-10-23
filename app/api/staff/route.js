@@ -1,11 +1,18 @@
 import pool from "@/lib/db";
 import bcrypt from "bcrypt";
 import { publicErrorMessage, errorStatus } from "@/lib/errors";
+import { isValidNewStaff, INVALID_STAFF_DATA } from "@/lib/staffRules";
 
 export async function POST(req) {
   try {
-    const { firstName, lastName, username, password, role, phone } =
-      await req.json();
+    const body = await req.json();
+
+    // S1-VAL: same rules as the staff form, checked again on the server
+    if (!isValidNewStaff(body)) {
+      return Response.json({ error: INVALID_STAFF_DATA }, { status: 400 });
+    }
+
+    const { firstName, lastName, username, password, role, phone } = body;
 
     // Hash the password
     const saltRounds = 10; // You can adjust the cost factor

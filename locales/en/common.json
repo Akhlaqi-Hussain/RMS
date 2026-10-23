@@ -122,7 +122,13 @@
     "reportFailed": "Could not create the report",
     "reportTypeInvalid": "Invalid report type",
     "reportFieldsRequired": "Report type, start date and end date are required",
-    "categoryTaken": "This category already exists"
+    "categoryTaken": "This category already exists",
+    "loginFailed": "Username or password is incorrect",
+    "tooManyAttempts": "Too many failed attempts. Please try again in 15 minutes.",
+    "orderIdMismatch": "The order number does not match",
+    "lastManager": "At least one active manager is required",
+    "cannotDeactivateSelf": "You cannot deactivate your own account",
+    "invalidStaffData": "Some staff details are not valid. Please check the form."
   },
   "login": {
     "welcome": "Welcome",

@@ -1,4 +1,5 @@
 import { restaurantInfo } from "./restaurantInfo";
+import { escapeHtml } from "./escapeHtml";
 import { translate } from "@/lib/i18n/translate";
 import { getDir, getLangTag, normalizeLocale } from "@/lib/i18n/config";
 import {
@@ -123,8 +124,8 @@ export function printKitchenBill(order, items, locale) {
         <div class="receipt">
           <div class="header">
             <div class="restaurant-name">${p.restaurant.name}</div>
-            <p>${p.tr("print.number")} <strong>${restaurantInfo.prefix}-${order_id}</strong></p>
-            <p>${p.tr("print.table")} <strong>${table_no}</strong></p>
+            <p>${p.tr("print.number")} <strong>${restaurantInfo.prefix}-${escapeHtml(order_id)}</strong></p>
+            <p>${p.tr("print.table")} <strong>${escapeHtml(table_no)}</strong></p>
             <p>${p.date(created_at)}</p>
             <p>${p.time(created_at)}</p>
           </div>
@@ -141,9 +142,9 @@ export function printKitchenBill(order, items, locale) {
                 .map(
                   (item) => `
                 <tr>
-                  <td class="item-name">${
+                  <td class="item-name">${escapeHtml(
                     item.menu_item || item.menu_item_id
-                  }</td>
+                  )}</td>
                   <td class="item-qty">${p.num(item.qty)}</td>
                 </tr>
               `
@@ -154,7 +155,7 @@ export function printKitchenBill(order, items, locale) {
 
           ${
             note
-              ? `<div style="margin-bottom: 5px;">${p.tr("print.orderNote")} ${note}</div>`
+              ? `<div style="margin-bottom: 5px;">${p.tr("print.orderNote")} ${escapeHtml(note)}</div>`
               : ""
           }
           
@@ -300,7 +301,7 @@ export function printCustomerBill(order, items, bill, locale) {
         <div class="receipt">
           <div class="header">
             <div class="restaurant-name">${p.restaurant.name}</div>
-            <p>${p.tr("print.order")} <strong>${restaurantInfo.prefix}-${order_id}</strong></p>
+            <p>${p.tr("print.order")} <strong>${restaurantInfo.prefix}-${escapeHtml(order_id)}</strong></p>
             <p>${p.date(created_at)}</p>
             <p>${p.time(created_at)}</p>
           </div>
@@ -318,9 +319,9 @@ export function printCustomerBill(order, items, bill, locale) {
                 .map(
                   (item) => `
                 <tr>
-                  <td style="text-align: ${p.start};">${
+                  <td style="text-align: ${p.start};">${escapeHtml(
                     item.menu_item || item.menu_item_id
-                  }</td>
+                  )}</td>
                   <td style="text-align: center;">${p.num(item.qty)}</td>
                   <td style="text-align: center;">${p.num(item.price)}</td>
                 </tr>

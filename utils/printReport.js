@@ -8,6 +8,7 @@ import {
   formatMoney,
 } from "@/lib/i18n/format";
 import { RTL_FONT_STACK, rtlFontFaceCss, PRINT_WHEN_READY } from "@/lib/i18n/fonts";
+import { escapeHtml } from "./escapeHtml";
 
 // I18N-01: the printed report follows the user's language and text direction.
 export function printReport(data, columns, title, locale) {
@@ -80,7 +81,7 @@ export function printReport(data, columns, title, locale) {
       (row) => `
       <tr>
         ${columns
-          .map((col) => `<td>${renderValue(col, row[col.key], row)}</td>`)
+          .map((col) => `<td>${escapeHtml(renderValue(col, row[col.key], row))}</td>`) // S1-XSS
           .join("")}
       </tr>`
     )
@@ -113,7 +114,7 @@ export function printReport(data, columns, title, locale) {
     <html lang="${lang}" dir="${dir}">
       <head>
         <meta charset="UTF-8" />
-        <title>${title}</title>
+        <title>${escapeHtml(title)}</title>
         <style>
           ${dir === "rtl" ? rtlFontFaceCss(window.location.origin) : ""}
           * { 
@@ -281,7 +282,7 @@ export function printReport(data, columns, title, locale) {
       <body>
         <div class="header">
           <div class="restaurant-name">${restaurant.name}</div>
-          <h2 class="report-title">${title}</h2>
+          <h2 class="report-title">${escapeHtml(title)}</h2>
           <div class="report-info">
             ${tr("print.printDate", { date: formatDate(now, loc), time: formatTime(now, loc) })}
           </div>
@@ -296,7 +297,7 @@ export function printReport(data, columns, title, locale) {
               ${columns
                 .map(
                   (col) =>
-                    `<th>${col.header ?? col.key.replace(/_/g, " ")}</th>`
+                    `<th>${escapeHtml(col.header ?? col.key.replace(/_/g, " "))}</th>`
                 )
                 .join("")}
             </tr>
