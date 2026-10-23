@@ -18,19 +18,73 @@
 //   BACKUP_MODE=docker (default) → runs inside the Docker database container
 //   BACKUP_MODE=direct           → local mysql tool, DB_HOST/DB_PORT, MYSQL_ROOT_PASSWORD
 // Next step afterwards: `npm run create-manager -- --db rms_prod`.
+//
+// R8-BKUSER — a backup-only database user, so backups never need the root password:
+//   npm run db:setup-prod -- --db rms_prod --with-backup-user   new database + backup user
+//   npm run db:setup-prod -- --db rms_prod --backup-user-only   ONLY the backup user's rights
+//                                                               for an EXISTING database
+//                                                               (no other change to it)
+// The user (BACKUP_DB_USER, default rms_backup) may only READ that database:
+// SELECT, SHOW VIEW, TRIGGER, EVENT on it, plus SHOW_ROUTINE to copy the stored
+// procedures. It cannot change or delete anything and cannot read other databases.
+// A new user gets a random password, shown ONCE, to put into the settings file.
 // =====================================================================
 import { createReadStream, readdirSync } from "node:fs";
+import { randomBytes } from "node:crypto";
 import { join } from "node:path";
+import { Readable } from "node:stream";
 import { ROOT, loadConfig, readEnvFile, run, sql, tableCounts, sqlCommandFor } from "./backup-lib.mjs";
+import { configFile } from "../lib/rmsPaths.mjs";
 
 const args = process.argv.slice(2);
 const value = (f) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : undefined; };
+
+// R8-BKUSER: create (if missing) and give read-only rights on `db` to the backup user.
+// Same host entries as the app user, so it connects the same way.
+async function ensureBackupUser(cfg, db, appUser) {
+  const backupUser = readEnvFile().BACKUP_DB_USER || "rms_backup";
+  if (!/^[A-Za-z0-9_]+$/.test(backupUser)) throw new Error(`Invalid BACKUP_DB_USER: ${backupUser}`);
+  let hosts = (await sql(cfg, `SELECT host FROM mysql.user WHERE user='${appUser}'`)).map((r) => r[0].replace(/'/g, ""));
+  if (hosts.length === 0) hosts = ["localhost", "127.0.0.1"];
+  const existing = new Set((await sql(cfg, `SELECT host FROM mysql.user WHERE user='${backupUser}'`)).map((r) => r[0]));
+  const password = randomBytes(18).toString("hex");
+  const created = [];
+  for (const h of hosts) {
+    const statements = [];
+    if (!existing.has(h)) {
+      statements.push(`CREATE USER '${backupUser}'@'${h}' IDENTIFIED BY '${password}';`);
+      created.push(h);
+    }
+    statements.push(`GRANT SELECT, SHOW VIEW, TRIGGER, EVENT ON \`${db}\`.* TO '${backupUser}'@'${h}';`);
+    statements.push(`GRANT SHOW_ROUTINE ON *.* TO '${backupUser}'@'${h}';`);
+    // sent through standard input, so the password never appears in the list of running programs
+    const c = sqlCommandFor(cfg, "mysql", ["--default-character-set=utf8mb4"]);
+    await run(c.cmd, c.args, { env: c.env, input: Readable.from([statements.join("\n")]) });
+    console.log(`  backup user ${backupUser}@${h}: ${existing.has(h) ? "already existed (password unchanged)" : "created"}; read-only rights on "${db}"`);
+  }
+  if (created.length) {
+    console.log(`\n  Put these two lines into ${configFile(ROOT)} (shown only now):`);
+    console.log(`    BACKUP_DB_USER=${backupUser}`);
+    console.log(`    BACKUP_DB_PASSWORD=${password}`);
+    console.log("  They are used by backups in BACKUP_MODE=direct (installed RMS). Docker mode keeps using the container.");
+  }
+}
 
 async function main() {
   const db = value("--db") || "rms_prod";
   const cfg = loadConfig({ db }); // also checks that the name is safe (letters, digits, _)
   const appUser = readEnvFile().DB_USER || "rms_app";
   if (!/^[A-Za-z0-9_]+$/.test(appUser)) throw new Error(`Invalid DB_USER: ${appUser}`);
+
+  // R8-BKUSER: only the backup user's rights for an existing database
+  if (args.includes("--backup-user-only")) {
+    const [[found]] = await sql(cfg, `SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name='${db}'`);
+    if (Number(found) === 0) throw new Error(`The database "${db}" does not exist. Nothing was changed.`);
+    console.log(`RMS — backup user for the existing database "${db}" (mode: ${cfg.mode}); the database itself is not changed.\n`);
+    await ensureBackupUser(cfg, db, appUser);
+    console.log("\nOK  Backup user ready.");
+    return;
+  }
   const migrationsDir = join(ROOT, "database", "migrations");
   const migrations = readdirSync(migrationsDir).filter((f) => /^\d+_.+\.sql$/.test(f)).sort();
 
@@ -83,6 +137,12 @@ async function main() {
   console.log(`  stored procedures: ${routines}`);
   console.log(`  rows in tables (except schema_migrations): ${withData.length ? withData.join(", ") : "none — empty, as it should be"}`);
   if (!okTables || routines < 25) throw new Error("The new database does not look complete (expected 8 tables and 25 procedures).");
+
+  // 5. optional: backup-only user (R8-BKUSER)
+  if (args.includes("--with-backup-user")) {
+    console.log("");
+    await ensureBackupUser(cfg, db, appUser);
+  }
 
   console.log(`\nOK  "${db}" is ready and empty.`);
   console.log(`Next: npm run create-manager -- --db ${db}`);
