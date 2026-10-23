@@ -22,8 +22,11 @@
 //   10 failures, S1-HDR headers, S1-ROLE current role, S1-ORD own orders only,
 //   S1-VAL staff checks, S1-MGR keep one active manager.
 //   The S1-XSS print check needs a browser: see docs/TEST-CHECKLIST.md.
+// Version 9 (round 8): R8-DATA — when this test is started with RMS_DATA_DIR
+//   (the same data folder as the app), it also checks that an uploaded picture
+//   is stored in <data>/uploads/menu and not in the project's public folder.
 // =====================================================================
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const BASE = process.argv[2] || "http://localhost:3000";
@@ -267,6 +270,12 @@ async function main() {
   check("SEC-2 stored image gets a safe generated name", /^\/uploads\/menu\/\d+-[0-9a-f]{12}\.jpg$/.test(edited?.image || ""), edited?.image);
   const imgRes = edited?.image ? await fetch(BASE + edited.image) : null;
   check("MENU uploaded image is served", imgRes?.status === 200, imgRes?.status);
+  if (process.env.RMS_DATA_DIR && edited?.image) {
+    const fileName = edited.image.split("/").pop();
+    const inData = existsSync(join(process.env.RMS_DATA_DIR, "uploads", "menu", fileName));
+    const inPublic = existsSync(join(REPO, "public", "uploads", "menu", fileName));
+    check("R8-DATA uploaded picture is stored in the data folder (not in public/)", inData && !inPublic, `data folder: ${inData}, public: ${inPublic}`);
+  }
   // SEC-2: the server rejects files that are not real images, and oversized files
   const fakeForm = (bytes, name, type) => {
     const f = new FormData();
